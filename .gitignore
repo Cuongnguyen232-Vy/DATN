@@ -1,0 +1,38 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Environment & Credentials (BẢO VỆ TOKEN BÍ MẬT)
+.env
+.env.local
+*.key
+*.pem
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Temporary files & Logs
+*.log
+data/logs/*.csv
+data/signals/*.txt
+mql5/comp.log
+comp.log
+
+# Large temporary datasets if any
+# (giữ lại các file data mẫu như XAUUSD_H4.csv, XAUUSD_M15.csv để chạy demo)

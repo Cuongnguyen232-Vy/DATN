@@ -1,0 +1,15 @@
+# Exclude generated/vendored HTML reports from GitHub Language Statistics
+*.html linguist-detectable=false
+*.html linguist-vendored=true
+*.html linguist-generated=true
+data/*.html linguist-vendored=true
+data/*.html linguist-generated=true
+
+# Mark datasets as documentation/data
+*.csv linguist-detectable=false
+*.csv linguist-generated=true
+
+# Force Python & MQL5 recognition
+*.py linguist-detectable=true
+*.mq5 linguist-detectable=true
+*.mqh linguist-detectable=true

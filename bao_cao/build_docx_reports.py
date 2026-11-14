@@ -479,6 +479,7 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
     in_code_block = False
     in_math_block = False
     math_buffer = []
+    table_buffer = []
 
     def flush_math():
         nonlocal math_buffer
@@ -487,15 +488,90 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             add_math_formula(doc, combined)
             math_buffer = []
 
+    def flush_table():
+        nonlocal table_buffer
+        if not table_buffer:
+            return
+        rows_data = []
+        for r_line in table_buffer:
+            if re.match(r'^\|[\s\:\-]+(?:\|[\s\:\-]+)+\|$', r_line):
+                continue
+            cells = [c.strip() for c in r_line.strip('|').split('|')]
+            if cells:
+                rows_data.append(cells)
+        table_buffer = []
+        if not rows_data:
+            return
+
+        num_rows = len(rows_data)
+        num_cols = max(len(r) for r in rows_data)
+        tbl = doc.add_table(rows=num_rows, cols=num_cols)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        tbl.autofit = True
+
+        for r_idx, row in enumerate(rows_data):
+            for c_idx, val in enumerate(row):
+                if c_idx >= num_cols:
+                    break
+                cell = tbl.rows[r_idx].cells[c_idx]
+                set_cell_margins(cell, top=60, bottom=60, left=100, right=100)
+                p = cell.paragraphs[0]
+                p.paragraph_format.space_before = Pt(2)
+                p.paragraph_format.space_after = Pt(2)
+                p.paragraph_format.first_line_indent = Inches(0)
+                if r_idx == 0:
+                    set_cell_background(cell, "F0F4F8")
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    val_clean = val.replace('**', '')
+                    run = p.add_run(clean_xml_string(val_clean))
+                    run.font.name = "Times New Roman"
+                    run.font.size = Pt(10.5)
+                    run.font.bold = True
+                    run.font.color.rgb = RGBColor(0, 32, 96)
+                else:
+                    if r_idx % 2 == 1:
+                        set_cell_background(cell, "FFFFFF")
+                    else:
+                        set_cell_background(cell, "FBFBFB")
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    parts = re.split(r'(\*\*.*?\*\*)', val)
+                    for part in parts:
+                        if not part:
+                            continue
+                        if part.startswith('**') and part.endswith('**'):
+                            r = p.add_run(clean_xml_string(part[2:-2]))
+                            r.font.name = "Times New Roman"
+                            r.font.size = Pt(10)
+                            r.font.bold = True
+                            r.font.color.rgb = RGBColor(0, 32, 96) if c_idx == 0 else RGBColor(0, 0, 0)
+                        else:
+                            r = p.add_run(clean_xml_string(part))
+                            r.font.name = "Times New Roman"
+                            r.font.size = Pt(10)
+
+        p_after = doc.add_paragraph()
+        p_after.paragraph_format.space_before = Pt(0)
+        p_after.paragraph_format.space_after = Pt(4)
+        p_after.paragraph_format.first_line_indent = Inches(0)
+
     for line in lines:
         raw = line.strip()
         if not raw:
             flush_math()
+            flush_table()
             continue
 
         if raw == '---':
             flush_math()
+            flush_table()
             continue
+
+        if raw.startswith('|') and raw.endswith('|'):
+            flush_math()
+            table_buffer.append(raw)
+            continue
+        else:
+            flush_table()
 
         if in_code_block:
             if raw.startswith('```'):
@@ -591,6 +667,19 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             format_body_paragraph(p, raw)
 
     flush_math()
+    flush_table()
+
+
+def safe_save(doc, target_path):
+    """Lưu file Word an toàn, nếu file đang mở thì lưu file thay thế"""
+    try:
+        doc.save(target_path)
+        print(f"[OK] Da tao thanh cong file: {target_path}")
+    except PermissionError:
+        alt_path = target_path.replace(".docx", "_moinhat.docx")
+        doc.save(alt_path)
+        print(f"[CANH BAO] File {os.path.basename(target_path)} dang duoc mo trong Word.")
+        print(f"[OK] Da luu ban moi nhat vao file: {alt_path}")
 
 
 def build_chapter_1():
@@ -606,20 +695,7 @@ def build_chapter_1():
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_NguyenManhCuong_B22DCCN099.docx"
-    doc.save(out_p)
-    print(f"[OK] Da tao thanh cong file: {out_p}")
-
-
-def safe_save(doc, target_path):
-    """Lưu file Word an toàn, nếu file đang mở thì lưu file thay thế"""
-    try:
-        doc.save(target_path)
-        print(f"[OK] Da tao thanh cong file: {target_path}")
-    except PermissionError:
-        alt_path = target_path.replace(".docx", "_moinhat.docx")
-        doc.save(alt_path)
-        print(f"[CANH BAO] File {os.path.basename(target_path)} dang duoc mo trong Word.")
-        print(f"[OK] Da luu ban moi nhat vao file: {alt_path}")
+    safe_save(doc, out_p)
 
 
 def build_chapter_2():

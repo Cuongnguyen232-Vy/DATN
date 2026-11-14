@@ -13,3 +13,4 @@ data/*.html linguist-generated=true
 *.py linguist-detectable=true
 *.mq5 linguist-detectable=true
 *.mqh linguist-detectable=true
+

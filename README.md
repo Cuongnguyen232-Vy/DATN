@@ -185,3 +185,4 @@ Hệ thống đã được kiểm thử trên tập dữ liệu lịch sử XAU/
 
 ---
 *Bản quyền thuộc về Nhóm tác giả Đồ án Tốt nghiệp — Học viện Công nghệ Bưu chính Viễn thông (PTIT).*
+

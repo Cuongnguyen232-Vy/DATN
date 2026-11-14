@@ -11,15 +11,16 @@ import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import OxmlElement, parse_xml
-from docx.oxml.ns import qn, nsdecls
-
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls
 
 
 def clean_xml_string(s):
+    """Loại bỏ ký tự điều khiển XML không hợp lệ"""
     if not isinstance(s, str):
         return str(s)
-    return ''.join(c for c in s if ord(c) >= 32 or c in ('\t', '\n', '\r'))
+    return "".join(c for c in s if ord(c) >= 32 or c in ("\t", "\n", "\r"))
+
 
 def set_cell_background(cell, fill_hex):
     """Tô màu nền cho cell trong bảng"""
@@ -45,14 +46,13 @@ def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
 def apply_ptit_page_setup(doc):
     """Thiết lập kích thước trang và căn lề chuẩn PTIT (Top: 2cm, Bottom: 2cm, Left: 3cm, Right: 2cm)"""
     for section in doc.sections:
-        section.page_width = Inches(8.27)   # A4 Width: 21.0 cm
-        section.page_height = Inches(11.69) # A4 Height: 29.7 cm
-        section.top_margin = Inches(0.79)   # 2.0 cm
-        section.bottom_margin = Inches(0.79)# 2.0 cm
-        section.left_margin = Inches(1.18)  # 3.0 cm
-        section.right_margin = Inches(0.79) # 2.0 cm
-        
-        # Header & Footer setup
+        section.page_width = Inches(8.27)    # A4 Width: 21.0 cm
+        section.page_height = Inches(11.69)  # A4 Height: 29.7 cm
+        section.top_margin = Inches(0.79)    # 2.0 cm
+        section.bottom_margin = Inches(0.79) # 2.0 cm
+        section.left_margin = Inches(1.18)   # 3.0 cm
+        section.right_margin = Inches(0.79)  # 2.0 cm
+
         header = section.header
         hp = header.paragraphs[0]
         hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -61,7 +61,7 @@ def apply_ptit_page_setup(doc):
         hrun.font.size = Pt(8.5)
         hrun.font.italic = True
         hrun.font.color.rgb = RGBColor(120, 120, 120)
-        
+
         footer = section.footer
         fp = footer.paragraphs[0]
         fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -110,7 +110,6 @@ def add_cover_box(doc, chapter_title):
     r_chap.font.color.rgb = RGBColor(180, 0, 0)
     p_chap.paragraph_format.space_after = Pt(14)
 
-    # Khung đề tài & tác giả
     table = doc.add_table(rows=5, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
@@ -130,7 +129,7 @@ def add_cover_box(doc, chapter_title):
         c1 = row.cells[1]
         c0.width = col_widths[0]
         c1.width = col_widths[1]
-        
+
         p0 = c0.paragraphs[0]
         p0.paragraph_format.space_after = Pt(2)
         p0.paragraph_format.space_before = Pt(2)
@@ -201,8 +200,8 @@ def add_abbreviations_table(doc):
     abbr_data = [
         ("AI", "Artificial Intelligence — Trí tuệ nhân tạo"),
         ("ATR", "Average True Range — Độ biến động thực tế trung bình"),
-        ("BiGRU", "Bidirectional Gated Recurrent Unit — Mạng nơ-ron hồi quy có cổng 2 chiều"),
-        ("CNN / 1D-CNN", "Convolutional Neural Network — Mạng nơ-ron tích chập một chiều"),
+        ("BiGRU", "Bidirectional Gated Recurrent Unit — Mạng nơ-ron hồi quy 2 chiều"),
+        ("CNN", "Convolutional Neural Network — Mạng nơ-ron tích chập 1 chiều (1D-CNN)"),
         ("DCA", "Dollar-Cost Averaging — Chiến lược quản lý vốn trung bình giá"),
         ("DXY", "US Dollar Index — Chỉ số sức mạnh đồng Đô la Mỹ"),
         ("EA", "Expert Advisor — Robot phần mềm giao dịch tự động trên MetaTrader"),
@@ -214,10 +213,10 @@ def add_abbreviations_table(doc):
         ("MDD", "Maximum Drawdown — Mức sụt giảm tài khoản tối đa"),
         ("MQL5", "MetaQuotes Language 5 — Ngôn ngữ lập trình hướng đối tượng trên MT5"),
         ("MT5", "MetaTrader 5 — Nền tảng giao dịch tài chính đa tài sản quốc tế"),
-        ("MHA", "Multi-Head Attention — Cơ chế chú ý đa đầu trong mạng Transformer"),
+        ("MHA", "Multi-Head Attention — Cơ chế chú ý đa đầu"),
         ("NLP", "Natural Language Processing — Xử lý ngôn ngữ tự nhiên"),
-        ("NFP", "Non-Farm Payrolls — Báo cáo bảng lương phi nông nghiệp Mỹ"),
-        ("OHLCV", "Open, High, Low, Close, Volume — Dữ liệu giá mở, cao, thấp, đóng và khối lượng"),
+        ("NFP", "Non-Farm Payrolls — Báo cáo việc làm phi nông nghiệp Mỹ"),
+        ("OHLCV", "Open, High, Low, Close, Volume — Dữ liệu giá nến và khối lượng"),
         ("ROC", "Rate of Change — Chỉ báo tốc độ thay đổi giá"),
         ("RSI", "Relative Strength Index — Chỉ số sức mạnh tương đối"),
         ("VADER", "Valence Aware Dictionary and sEntiment Reasoner"),
@@ -258,28 +257,28 @@ def format_body_paragraph(p, text, is_intro=False):
     p.paragraph_format.line_spacing = 1.3
     p.paragraph_format.space_before = Pt(0)
     p.paragraph_format.space_after = Pt(4)
-    p.paragraph_format.first_line_indent = Inches(0.39) # ~1.0 cm
+    p.paragraph_format.first_line_indent = Inches(0.39)
     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
-    # Xử lý in đậm markdown **bold** và in nghiêng *italic*
     parts = re.split(r'(\*\*.*?\*\*|\*.*?\*|\$[^\$]+\$)', text)
     for part in parts:
         if not part:
             continue
         if part.startswith('**') and part.endswith('**'):
-            run = p.add_run(part[2:-2])
+            run = p.add_run(clean_xml_string(part[2:-2]))
             run.font.name = "Times New Roman"
             run.font.size = Pt(13)
             run.font.bold = True
         elif part.startswith('*') and part.endswith('*'):
-            run = p.add_run(part[1:-1])
+            run = p.add_run(clean_xml_string(part[1:-1]))
             run.font.name = "Times New Roman"
             run.font.size = Pt(13)
             run.font.italic = True
         elif part.startswith('$') and part.endswith('$'):
-            run = p.add_run(part[1:-1])
+            cleaned_math = clean_latex_formula(part[1:-1])
+            run = p.add_run(clean_xml_string(cleaned_math))
             run.font.name = "Cambria Math"
-            run.font.size = Pt(12.5)
+            run.font.size = Pt(12)
             run.font.italic = True
         else:
             run = p.add_run(clean_xml_string(part))
@@ -296,45 +295,142 @@ def format_heading(doc, text, level):
     p.paragraph_format.space_after = Pt(4)
     p.paragraph_format.first_line_indent = Inches(0)
 
+    clean_text = clean_xml_string(text)
     if level == 1:
         p.paragraph_format.space_before = Pt(16)
         p.paragraph_format.space_after = Pt(8)
-        run = p.add_run(text)
+        run = p.add_run(clean_text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(15)
         run.font.bold = True
         run.font.color.rgb = RGBColor(0, 32, 96)
     elif level == 2:
-        run = p.add_run(text)
+        run = p.add_run(clean_text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(13.5)
         run.font.bold = True
         run.font.color.rgb = RGBColor(0, 0, 0)
     elif level == 3:
-        run = p.add_run(text)
+        run = p.add_run(clean_text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(13)
         run.font.bold = True
         run.font.italic = True
     elif level == 4:
-        run = p.add_run(text)
+        run = p.add_run(clean_text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(13)
         run.font.italic = True
     return p
 
 
+def clean_latex_formula(s):
+    """Chuyển đổi mã nguồn LaTeX sang công thức toán Unicode rõ ràng, đẹp mắt cho Word"""
+    s = str(s).strip()
+    
+    # 1. Clean \text{...}
+    for _ in range(5):
+        prev = s
+        s = re.sub(r'\\text\s*\{([^{}]+)\}', r'\1', s)
+        if s == prev:
+            break
+
+    # 2. Convert subscripts/superscripts
+    s = re.sub(r'_\{([^{}]+)\}', r'_(\1)', s)
+    s = re.sub(r'\^\{([^{}]+)\}', r'^(\1)', s)
+
+    # 3. Clean inner math commands
+    for _ in range(5):
+        prev = s
+        s = re.sub(r'\\sqrt\s*\{([^{}]+)\}', r'√(\1)', s)
+        if s == prev:
+            break
+
+    s = re.sub(r'\\vec\s*\{([^{}]+)\}', r'\1_thuận', s)
+    s = re.sub(r'\\overrightarrow\s*\{([^{}]+)\}', r'\1_thuận', s)
+    s = re.sub(r'\\overleftarrow\s*\{([^{}]+)\}', r'\1_nghịch', s)
+    s = re.sub(r'\\tilde\s*\{([^{}]+)\}', r'~\1', s)
+    s = re.sub(r'\\hat\s*\{([^{}]+)\}', r'\1^', s)
+    s = re.sub(r'\\bar\s*\{([^{}]+)\}', r'\1_bar', s)
+
+    # 4. Clean \frac
+    for _ in range(4):
+        s = re.sub(r'\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}', r'[\1] / [\2]', s)
+
+    # 5. Remove brackets
+    s = s.replace('\\left(', '(').replace('\\right)', ')')
+    s = s.replace('\\left[', '[').replace('\\right]', ']')
+    s = s.replace('\\left|', '|').replace('\\right|', '|')
+    s = s.replace('\\left.', '').replace('\\right.', '')
+    s = s.replace('\\left', '').replace('\\right', '')
+
+    # 6. Greek & Math symbols
+    table = [
+        ('\\times', ' × '),
+        ('\\cdot', ' · '),
+        ('\\odot', ' ⊙ '),
+        ('\\alpha', 'α'),
+        ('\\beta', 'β'),
+        ('\\gamma', 'γ'),
+        ('\\sigma', 'σ'),
+        ('\\Delta', 'Δ'),
+        ('\\ge', '≥'),
+        ('\\le', '≤'),
+        ('\\ne', '≠'),
+        ('\\approx', '≈'),
+        ('\\in', '∈'),
+        ('\\mathbb{R}', 'ℝ'),
+        ('\\mathbb R', 'ℝ'),
+        ('\\sum', '∑'),
+        ('\\max', 'max'),
+        ('\\min', 'min'),
+        ('\\tanh', 'tanh'),
+        ('\\quad', '   '),
+        ('\\dots', '...'),
+        ('\\|', ' ‖ '),
+        ('\\%', '%'),
+        ('\\\\', '\n'),
+    ]
+    for p, r in table:
+        s = s.replace(p, r)
+
+    s = re.sub(r'\\[a-zA-Z]+', '', s)
+    s = s.replace('{', '').replace('}', '')
+    s = re.sub(r'  +', ' ', s)
+    return clean_xml_string(s.strip())
+
+
 def add_math_formula(doc, formula_text):
-    """Thêm khối công thức toán căn giữa"""
-    p = doc.add_paragraph()
+    """Thêm hộp công thức toán được đóng khung trang trọng, căn giữa trang"""
+    cleaned = clean_latex_formula(formula_text)
+    if not cleaned:
+        return
+
+    table = doc.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+
+    cell = table.rows[0].cells[0]
+    cell.width = Inches(5.8)
+    set_cell_background(cell, "F8F9FA")
+    set_cell_margins(cell, top=80, bottom=80, left=150, right=150)
+
+    p = cell.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(4)
-    p.paragraph_format.space_after = Pt(4)
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(3)
     p.paragraph_format.first_line_indent = Inches(0)
-    run = p.add_run(clean_xml_string(formula_text))
+
+    run = p.add_run(cleaned)
     run.font.name = "Cambria Math"
-    run.font.size = Pt(12)
-    run.font.italic = True
+    run.font.size = Pt(11.5)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(0, 32, 96)
+
+    p_after = doc.add_paragraph()
+    p_after.paragraph_format.space_before = Pt(0)
+    p_after.paragraph_format.space_after = Pt(2)
+    p_after.paragraph_format.first_line_indent = Inches(0)
 
 
 def add_image_figure(doc, img_path, caption, width_inch=5.5):
@@ -367,17 +463,15 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
     in_code_block = False
     in_math_block = False
     math_buffer = []
-    
+
     for line in lines:
         raw = line.strip()
         if not raw:
             continue
 
-        # Bỏ qua dòng phân cách ---
         if raw == '---':
             continue
 
-        # Xử lý Math block $$ ... $$
         if raw == '$$':
             if in_math_block:
                 add_math_formula(doc, "   ".join(math_buffer))
@@ -393,12 +487,10 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             math_buffer.append(raw)
             continue
 
-        # Xử lý code block ASCII art ```
         if raw.startswith('```'):
             in_code_block = not in_code_block
             continue
         if in_code_block:
-            # Code block được format thành khối chữ Courier New xám căn giữa
             p_code = doc.add_paragraph()
             p_code.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p_code.paragraph_format.space_before = Pt(0)
@@ -410,7 +502,6 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             run_c.font.color.rgb = RGBColor(60, 60, 60)
             continue
 
-        # Xử lý Tiêu đề
         if raw.startswith('# '):
             format_heading(doc, raw[2:].strip(), 1)
         elif raw.startswith('## '):
@@ -420,11 +511,9 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
         elif raw.startswith('#### '):
             format_heading(doc, raw[5:].strip(), 4)
         elif raw.startswith('*') and raw.endswith('*') and not raw.startswith('**'):
-            # Đoạn dẫn nhập in nghiêng
             p = doc.add_paragraph()
             format_body_paragraph(p, raw[1:-1].strip(), is_intro=True)
         elif raw.startswith('> '):
-            # Blockquote
             p = doc.add_paragraph()
             p.paragraph_format.first_line_indent = Inches(0.2)
             run = p.add_run(clean_xml_string(raw[2:].strip()))
@@ -433,7 +522,6 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             run.font.italic = True
             run.font.color.rgb = RGBColor(40, 40, 40)
         elif raw.startswith('- ') or raw.startswith('* '):
-            # Bullet list
             p = doc.add_paragraph(style='List Bullet')
             p.paragraph_format.line_spacing = 1.3
             p.paragraph_format.space_after = Pt(2)
@@ -442,7 +530,6 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             p.paragraph_format.left_indent = Inches(0.4)
             format_body_paragraph(p, raw[2:].strip())
         elif re.match(r'^\d+\.\s', raw):
-            # Numbered list
             p = doc.add_paragraph()
             p.paragraph_format.line_spacing = 1.3
             p.paragraph_format.space_after = Pt(2)
@@ -450,7 +537,6 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             p.paragraph_format.first_line_indent = Inches(0.2)
             format_body_paragraph(p, raw)
         else:
-            # Paragraph bình thường
             p = doc.add_paragraph()
             format_body_paragraph(p, raw)
 
@@ -461,11 +547,10 @@ def build_chapter_1():
     apply_ptit_page_setup(doc)
     add_cover_box(doc, "CHƯƠNG 1. TỔNG QUAN VỀ BÀI TOÁN DỰ ĐOÁN XU HƯỚNG\nVÀ GIAO DỊCH TỰ ĐỘNG TRÊN THỊ TRƯỜNG TÀI CHÍNH")
     add_abbreviations_table(doc)
-    
+
     md_p = r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md"
     parse_and_write_markdown(doc, md_p, chapter_num=1)
-    
-    # Chèn hình ảnh kiến trúc tổng thể vào mục 1.2
+
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_NguyenManhCuong_B22DCCN099.docx"
@@ -479,11 +564,10 @@ def build_chapter_2():
     apply_ptit_page_setup(doc)
     add_cover_box(doc, "CHƯƠNG 2. CƠ SỞ KIẾN THỨC VÀ CÔNG NGHỆ ÁP DỤNG")
     add_abbreviations_table(doc)
-    
+
     md_p = r"c:\KLTNN\bao_cao\CHUONG_2_CO_SO_LY_THUYET.md"
     parse_and_write_markdown(doc, md_p, chapter_num=2)
-    
-    # Chèn các hình ảnh minh họa cho các phần lý thuyết
+
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
@@ -499,14 +583,12 @@ def build_combined_1_and_2():
     apply_ptit_page_setup(doc)
     add_cover_box(doc, "BÁO CÁO TIẾN ĐỘ ĐỒ ÁN TỐT NGHIỆP: CHƯƠNG 1 VÀ CHƯƠNG 2")
     add_abbreviations_table(doc)
-    
-    # Chương 1
+
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md", chapter_num=1)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
-    
+
     doc.add_page_break()
-    
-    # Chương 2
+
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_2_CO_SO_LY_THUYET.md", chapter_num=2)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)

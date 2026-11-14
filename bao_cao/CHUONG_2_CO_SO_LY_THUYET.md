@@ -88,7 +88,7 @@ Chỉ số $\%B$ phản ánh chính xác vị thế tương quan của giá hi�
 #### 5. Chỉ báo dao động ngẫu nhiên (Stochastic Oscillator)
 Stochastic đo lường vị trí tương đối của giá đóng cửa so với biên độ giá (High - Low) trong một khoảng thời gian  = 14$ nến:
 
-\%K = \frac{Close_t - \min_{14}(Low)}{\max_{14}(High) - \min_{14}(Low)} 	imes 100
+\%K = \frac{Close_t - \min_{14}(Low)}{\max_{14}(High) - \min_{14}(Low)} \times 100
 
 \%D = SMA_3(\%K)
 
@@ -97,7 +97,7 @@ Chỉ báo giúp xác định các điểm đảo chiều xung lượng cực ng
 #### 6. Tốc độ thay đổi giá (Rate of Change - ROC)
 ROC đo lường tỷ lệ thay đổi phần trăm giữa giá đóng cửa hiện tại so với giá đóng cửa cách đó  = 10$ nến:
 
-ROC_t = \frac{Close_t - Close_{t-10}}{Close_{t-10}} 	imes 100\%
+ROC_t = \frac{Close_t - Close_{t-10}}{Close_{t-10}} \times 100\%
 
 Chỉ số phản ánh trực tiếp gia tốc tăng hoặc giảm của xu hướng giá.
 
@@ -153,21 +153,21 @@ Mạng hồi quy truyền thống (RNN) gặp phải rào cản nghiêm trọng 
 
 f_t = \sigma(W_f x_t + U_f h_{t-1} + b_f)
 i_t = \sigma(W_i x_t + U_i h_{t-1} + b_i)
-	ilde{C}_t = 	anh(W_c x_t + U_c h_{t-1} + b_c)
-C_t = f_t \odot C_{t-1} + i_t \odot 	ilde{C}_t
+\tilde{C}_t = \tanh(W_c x_t + U_c h_{t-1} + b_c)
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
 o_t = \sigma(W_o x_t + U_o h_{t-1} + b_o)
-h_t = o_t \odot 	anh(C_t)
+h_t = o_t \odot \tanh(C_t)
 
 #### 2. Đơn vị hồi quy có cổng (Gated Recurrent Unit - GRU)
 Mô hình GRU (Cho et al., 2014) được thiết kế nhằm tinh gọn hóa kiến trúc của LSTM bằng cách gộp Cell State và Hidden State, đồng thời giảm số lượng cổng từ 3 xuống 2 (Cổng cập nhật $ và Cổng đặt lại $):
 
-	ext{Cổng cập nhật (Update Gate):} \quad z_t = \sigma \left( W_z x_t + U_z h_{t-1} + b_z 
+\text{Cổng cập nhật (Update Gate):} \quad z_t = \sigma \left( W_z x_t + U_z h_{t-1} + b_z 
 ight)
-	ext{Cổng đặt lại (Reset Gate):} \quad r_t = \sigma \left( W_r x_t + U_r h_{t-1} + b_r 
+\text{Cổng đặt lại (Reset Gate):} \quad r_t = \sigma \left( W_r x_t + U_r h_{t-1} + b_r 
 ight)
-	ext{Trạng thái ẩn ứng viên (Candidate State):} \quad 	ilde{h}_t = 	anh \left( W_h x_t + U_h (r_t \odot h_{t-1}) + b_h 
+\text{Trạng thái ẩn ứng viên (Candidate State):} \quad \tilde{h}_t = \tanh \left( W_h x_t + U_h (r_t \odot h_{t-1}) + b_h 
 ight)
-	ext{Trạng thái ẩn cuối cùng (Final Hidden State):} \quad h_t = (1 - z_t) \odot h_{t-1} + z_t \odot 	ilde{h}_t
+\text{Trạng thái ẩn cuối cùng (Final Hidden State):} \quad h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
 
 So với LSTM, GRU có số lượng tham số ít hơn khoảng \%$, tốc độ huấn luyện và suy luận nhanh hơn, đồng thời giảm đáng kể rủi ro quá khớp trên tập dữ liệu chuỗi tài chính có độ dài vừa phải.
 
@@ -176,8 +176,8 @@ Trong một cửa sổ trượt quá khứ cố định (Sliding Window độ d�
 ightarrow 50$) và nghịch (từ nến  
 ightarrow 1$) cho phép mạng nắm bắt trọn vẹn ngữ cảnh của cấu trúc sóng giá:
 
-\vec{h}_t = \overrightarrow{	ext{GRU}}(x_t, \vec{h}_{t-1})
-\overleftarrow{h}_t = \overleftarrow{	ext{GRU}}(x_t, \overleftarrow{h}_{t+1})
+\vec{h}_t = \overrightarrow{\text{GRU}}(x_t, \vec{h}_{t-1})
+\overleftarrow{h}_t = \overleftarrow{\text{GRU}}(x_t, \overleftarrow{h}_{t+1})
 H_t = [\vec{h}_t \,\|\, \overleftarrow{h}_t]
 
 Trạng thái tổng hợp $ chứa đựng cả xu hướng tích lũy từ quá khứ lẫn sự phản ứng tức thời tại các điểm uốn của chu kỳ nến.
@@ -195,7 +195,7 @@ Q = H W^Q, \quad K = H W^K, \quad V = H W^V
 
 Ma trận trọng số chú ý được tính thông qua tích vô hướng chuẩn hóa:
 
-	ext{Attention}(Q, K, V) = 	ext{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} 
+\text{Attention}(Q, K, V) = \text{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} 
 ight) V
 
 Trong đó $\sqrt{d_k}$ là hệ số tỷ lệ nhằm ngăn chặn tích vô hướng trở nên quá lớn khiến hàm softmax rơi vào vùng có đạo hàm cực nhỏ.
@@ -203,8 +203,8 @@ Trong đó $\sqrt{d_k}$ là hệ số tỷ lệ nhằm ngăn chặn tích vô h�
 #### 2. Cơ chế Chú ý Đa đầu (Multi-Head Attention)
 Thay vì chỉ tính một ma trận chú ý duy nhất, mô hình phân chia thành  = 4$ đầu chú ý song song (Heads), mỗi đầu có chiều không gian  = 16$. Điều này cho phép mô hình đồng thời quan sát và liên kết các đặc trưng tại nhiều khía cạnh khác nhau (ví dụ: một đầu chú ý theo dõi xung lượng RSI, một đầu chú ý theo dõi độ nén Bollinger Bands):
 
-	ext{head}_i = 	ext{Attention}(Q W_i^Q, K W_i^K, V W_i^V)
-	ext{MultiHead}(Q, K, V) = 	ext{Concat}(	ext{head}_1, 	ext{head}_2, \dots, 	ext{head}_h) W^O
+\text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)
+\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \text{head}_2, \dots, \text{head}_h) W^O
 
 #### 3. Kết nối tắt phần dư và Chuẩn hóa tầng (Residual Connection & LayerNorm)
 Nhằm duy trì dòng gradient xuyên suốt và tránh hiện tượng bão hòa tín hiệu, đầu ra chú ý được cộng trực tiếp với đầu vào của tầng BiGRU (Skip Connection) kết hợp với tầng chuẩn hóa Layer Normalization:
@@ -482,7 +482,7 @@ Bên cạnh thuật toán co giãn bước giá theo ATR, hệ thống VQuant t�
 
 1. **Khóa rủi ro thả nổi (Floating Drawdown Lock):**
    Khi mức sụt giảm tài khoản thả nổi (Floating DD) của rổ lệnh hiện tại chạm ngưỡng cảnh báo cấu hình (ví dụ:  \ge 25\%$), Robot tự động kích hoạt vị thế đối ứng (Hedge Order) với tổng khối lượng tương đương theo chiều ngược lại:
-   	ext{Lot}_{	ext{Hedge}} = \left| \sum 	ext{Lot}_{	ext{BUY}} - \sum 	ext{Lot}_{	ext{SELL}} 
+   \text{Lot}_{\text{Hedge}} = \left| \sum \text{Lot}_{\text{BUY}} - \sum \text{Lot}_{\text{SELL}} 
 ight|
    Khi vị thế phòng hộ được xác lập, tổng mức lỗ của tài khoản sẽ bị đóng băng hoàn toàn bất kể giá tiếp tục biến động theo hướng nào.
 

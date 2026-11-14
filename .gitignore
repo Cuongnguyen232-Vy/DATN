@@ -41,3 +41,8 @@ comp.log
 # Generated HTML reports
 *.html
 data/*.html
+
+# Microsoft Office temporary lock files
+~$*.docx
+~$*.xlsx
+

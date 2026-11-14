@@ -328,6 +328,13 @@ def clean_latex_formula(s):
     """Chuyển đổi mã nguồn LaTeX sang công thức toán Unicode rõ ràng, đẹp mắt cho Word"""
     s = str(s).strip()
     
+    # 0. Pre-clean environments and special operators
+    s = s.replace(r'\begin{cases}', '').replace(r'\end{cases}', '')
+    s = s.replace(r'\begin{aligned}', '').replace(r'\end{aligned}', '')
+    s = s.replace('&', '  :  ')
+    s = s.replace(r'\rightarrow', ' → ').replace(r'\leftarrow', ' ← ')
+    s = s.replace(r'\mathcal{L}', 'L').replace(r'\mathbb{E}', 'E')
+
     # 1. Clean \text{...}
     for _ in range(5):
         prev = s
@@ -358,52 +365,60 @@ def clean_latex_formula(s):
         s = re.sub(r'\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}', r'[\1] / [\2]', s)
 
     # 5. Remove brackets
-    s = s.replace('\\left(', '(').replace('\\right)', ')')
-    s = s.replace('\\left[', '[').replace('\\right]', ']')
-    s = s.replace('\\left|', '|').replace('\\right|', '|')
-    s = s.replace('\\left.', '').replace('\\right.', '')
-    s = s.replace('\\left', '').replace('\\right', '')
+    s = s.replace(r'\left(', '(').replace(r'\right)', ')')
+    s = s.replace(r'\left[', '[').replace(r'\right]', ']')
+    s = s.replace(r'\left|', '|').replace(r'\right|', '|')
+    s = s.replace(r'\left.', '').replace(r'\right.', '')
+    s = s.replace(r'\left', '').replace(r'\right', '')
 
     # 6. Greek & Math symbols
     table = [
-        ('\\times', ' × '),
-        ('\\cdot', ' · '),
-        ('\\odot', ' ⊙ '),
-        ('\\alpha', 'α'),
-        ('\\beta', 'β'),
-        ('\\gamma', 'γ'),
-        ('\\sigma', 'σ'),
-        ('\\Delta', 'Δ'),
-        ('\\ge', '≥'),
-        ('\\le', '≤'),
-        ('\\ne', '≠'),
-        ('\\approx', '≈'),
-        ('\\in', '∈'),
-        ('\\mathbb{R}', 'ℝ'),
-        ('\\mathbb R', 'ℝ'),
-        ('\\sum', '∑'),
-        ('\\max', 'max'),
-        ('\\min', 'min'),
-        ('\\tanh', 'tanh'),
-        ('\\quad', '   '),
-        ('\\dots', '...'),
-        ('\\|', ' ‖ '),
-        ('\\%', '%'),
-        ('\\\\', '\n'),
+        (r'\times', ' × '),
+        (r'\cdot', ' · '),
+        (r'\odot', ' ⊙ '),
+        (r'\alpha', 'α'),
+        (r'\beta', 'β'),
+        (r'\gamma', 'γ'),
+        (r'\sigma', 'σ'),
+        (r'\Delta', 'Δ'),
+        (r'\ge', '≥'),
+        (r'\le', '≤'),
+        (r'\ne', '≠'),
+        (r'\approx', '≈'),
+        (r'\in', '∈'),
+        (r'\mathbb{R}', 'ℝ'),
+        (r'\mathbb R', 'ℝ'),
+        (r'\sum', '∑'),
+        (r'\max', 'max'),
+        (r'\min', 'min'),
+        (r'\tanh', 'tanh'),
+        (r'\quad', '   '),
+        (r'\qquad', '      '),
+        (r'\dots', '...'),
+        (r'\|', ' ‖ '),
+        (r'\%', '%'),
+        (r'\pm', '±'),
+        (r'\tau', 'τ'),
+        (r'\\', '\n'),
     ]
     for p, r in table:
         s = s.replace(p, r)
 
     s = re.sub(r'\\[a-zA-Z]+', '', s)
     s = s.replace('{', '').replace('}', '')
-    s = re.sub(r'  +', ' ', s)
-    return clean_xml_string(s.strip())
+    s = re.sub(r'[ \t]+', ' ', s)
+    lines = [line.strip() for line in s.split('\n') if line.strip()]
+    return clean_xml_string('\n'.join(lines))
 
 
 def add_math_formula(doc, formula_text):
     """Thêm hộp công thức toán được đóng khung trang trọng, căn giữa trang"""
     cleaned = clean_latex_formula(formula_text)
     if not cleaned:
+        return
+
+    lines = [l.strip() for l in cleaned.split('\n') if l.strip()]
+    if not lines:
         return
 
     table = doc.add_table(rows=1, cols=1)
@@ -415,21 +430,22 @@ def add_math_formula(doc, formula_text):
     set_cell_background(cell, "F8F9FA")
     set_cell_margins(cell, top=80, bottom=80, left=150, right=150)
 
-    p = cell.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(3)
-    p.paragraph_format.space_after = Pt(3)
-    p.paragraph_format.first_line_indent = Inches(0)
+    for idx, line in enumerate(lines):
+        p = cell.paragraphs[0] if idx == 0 else cell.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(2)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.first_line_indent = Inches(0)
 
-    run = p.add_run(cleaned)
-    run.font.name = "Cambria Math"
-    run.font.size = Pt(11.5)
-    run.font.bold = True
-    run.font.color.rgb = RGBColor(0, 32, 96)
+        run = p.add_run(line)
+        run.font.name = "Cambria Math"
+        run.font.size = Pt(11)
+        run.font.bold = True
+        run.font.color.rgb = RGBColor(0, 32, 96)
 
     p_after = doc.add_paragraph()
     p_after.paragraph_format.space_before = Pt(0)
-    p_after.paragraph_format.space_after = Pt(2)
+    p_after.paragraph_format.space_after = Pt(4)
     p_after.paragraph_format.first_line_indent = Inches(0)
 
 
@@ -464,43 +480,77 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
     in_math_block = False
     math_buffer = []
 
+    def flush_math():
+        nonlocal math_buffer
+        if math_buffer:
+            combined = "\n".join(math_buffer)
+            add_math_formula(doc, combined)
+            math_buffer = []
+
     for line in lines:
         raw = line.strip()
         if not raw:
+            flush_math()
             continue
 
         if raw == '---':
+            flush_math()
             continue
 
-        if raw == '$$':
-            if in_math_block:
-                add_math_formula(doc, "   ".join(math_buffer))
-                math_buffer = []
-                in_math_block = False
+        if in_code_block:
+            if raw.startswith('```'):
+                in_code_block = False
             else:
-                in_math_block = True
-            continue
-        elif raw.startswith('$$') and raw.endswith('$$') and len(raw) > 4:
-            add_math_formula(doc, raw[2:-2].strip())
-            continue
-        elif in_math_block:
-            math_buffer.append(raw)
+                p_code = doc.add_paragraph()
+                p_code.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                p_code.paragraph_format.space_before = Pt(0)
+                p_code.paragraph_format.space_after = Pt(0)
+                p_code.paragraph_format.first_line_indent = Inches(0.2)
+                run_c = p_code.add_run(clean_xml_string(line.rstrip()))
+                run_c.font.name = "Consolas"
+                run_c.font.size = Pt(8.5)
+                run_c.font.color.rgb = RGBColor(60, 60, 60)
             continue
 
         if raw.startswith('```'):
-            in_code_block = not in_code_block
+            flush_math()
+            in_code_block = True
             continue
-        if in_code_block:
-            p_code = doc.add_paragraph()
-            p_code.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            p_code.paragraph_format.space_before = Pt(0)
-            p_code.paragraph_format.space_after = Pt(0)
-            p_code.paragraph_format.first_line_indent = Inches(0.2)
-            run_c = p_code.add_run(clean_xml_string(line.rstrip()))
-            run_c.font.name = "Consolas"
-            run_c.font.size = Pt(8.5)
-            run_c.font.color.rgb = RGBColor(60, 60, 60)
+
+        # Handling math formulas
+        if raw == '$$':
+            if in_math_block:
+                in_math_block = False
+                flush_math()
+            else:
+                flush_math()
+                in_math_block = True
             continue
+
+        if in_math_block:
+            if raw.endswith('$$'):
+                content = raw[:-2].strip()
+                if content:
+                    math_buffer.append(content)
+                in_math_block = False
+                flush_math()
+            else:
+                math_buffer.append(raw)
+            continue
+
+        if raw.startswith('$$'):
+            if raw.endswith('$$') and len(raw) > 4:
+                math_buffer.append(raw[2:-2].strip())
+                continue
+            else:
+                flush_math()
+                in_math_block = True
+                content = raw[2:].strip()
+                if content:
+                    math_buffer.append(content)
+                continue
+
+        flush_math()
 
         if raw.startswith('# '):
             format_heading(doc, raw[2:].strip(), 1)
@@ -540,6 +590,8 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             p = doc.add_paragraph()
             format_body_paragraph(p, raw)
 
+    flush_math()
+
 
 def build_chapter_1():
     """Tạo file Word độc lập cho Chương 1"""
@@ -558,6 +610,18 @@ def build_chapter_1():
     print(f"[OK] Da tao thanh cong file: {out_p}")
 
 
+def safe_save(doc, target_path):
+    """Lưu file Word an toàn, nếu file đang mở thì lưu file thay thế"""
+    try:
+        doc.save(target_path)
+        print(f"[OK] Da tao thanh cong file: {target_path}")
+    except PermissionError:
+        alt_path = target_path.replace(".docx", "_moinhat.docx")
+        doc.save(alt_path)
+        print(f"[CANH BAO] File {os.path.basename(target_path)} dang duoc mo trong Word.")
+        print(f"[OK] Da luu ban moi nhat vao file: {alt_path}")
+
+
 def build_chapter_2():
     """Tạo file Word độc lập cho Chương 2"""
     doc = docx.Document()
@@ -573,8 +637,7 @@ def build_chapter_2():
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_2_NguyenManhCuong_B22DCCN099.docx"
-    doc.save(out_p)
-    print(f"[OK] Da tao thanh cong file: {out_p}")
+    safe_save(doc, out_p)
 
 
 def build_combined_1_and_2():
@@ -595,8 +658,7 @@ def build_combined_1_and_2():
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_va_2_NguyenManhCuong_B22DCCN099.docx"
-    doc.save(out_p)
-    print(f"[OK] Da tao thanh cong file gop: {out_p}")
+    safe_save(doc, out_p)
 
 
 if __name__ == "__main__":

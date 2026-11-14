@@ -466,7 +466,7 @@ def build_chapter_1():
     parse_and_write_markdown(doc, md_p, chapter_num=1)
     
     # Chèn hình ảnh kiến trúc tổng thể vào mục 1.2
-    add_image_figure(doc, r"c:\KLTNN\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_NguyenManhCuong_B22DCCN099.docx"
     doc.save(out_p)
@@ -485,8 +485,8 @@ def build_chapter_2():
     
     # Chèn các hình ảnh minh họa cho các phần lý thuyết
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_2_NguyenManhCuong_B22DCCN099.docx"
     doc.save(out_p)
@@ -502,15 +502,15 @@ def build_combined_1_and_2():
     
     # Chương 1
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md", chapter_num=1)
-    add_image_figure(doc, r"c:\KLTNN\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
     
     doc.add_page_break()
     
     # Chương 2
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_2_CO_SO_LY_THUYET.md", chapter_num=2)
     add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_va_2_NguyenManhCuong_B22DCCN099.docx"
     doc.save(out_p)

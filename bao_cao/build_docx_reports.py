@@ -686,7 +686,7 @@ def build_chapter_1():
     """Tạo file Word độc lập cho Chương 1"""
     doc = docx.Document()
     apply_ptit_page_setup(doc)
-    add_cover_box(doc, "CHƯƠNG 1. TỔNG QUAN VỀ BÀI TOÁN VÀ HỆ THỐNG\nHỖ TRỢ RA QUYẾT ĐỊNH GIAO DỊCH TÀI CHÍNH")
+    add_cover_box(doc, "CHƯƠNG 1. TỔNG QUAN VỀ BÀI TOÁN")
     add_abbreviations_table(doc)
 
     md_p = r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md"

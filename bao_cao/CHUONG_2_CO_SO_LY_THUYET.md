@@ -1,6 +1,6 @@
 # CHƯƠNG 2. CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ ÁP DỤNG
 
-*Chương 2 trình bày cơ sở lý thuyết toán học và các công nghệ nền tảng được áp dụng trong hệ thống hỗ trợ ra quyết định VQuant. Nội dung bao gồm: đặc điểm dữ liệu chuỗi thời gian XAU/USD và các chỉ báo kỹ thuật; cơ sở toán học của mạng tích chập 1D-CNN, mạng hồi quy BiGRU, cơ chế Multi-Head Attention và mô hình đề xuất CNN-BiGRU-Attention; thuật toán so khớp mẫu hình Cosine Similarity; mô hình NLP FinBERT và từ điển VADER; nền tảng MetaTrader 5 (MQL5) và giao tiếp liên tiến trình IPC; thuật toán quản lý vốn ma trận DCA co giãn theo ATR và chiến lược phòng hộ Hedging; cùng các độ đo đánh giá hệ thống.*
+*Chương 2 trình bày cơ sở lý thuyết toán học và các công nghệ nền tảng được áp dụng trong hệ thống hỗ trợ ra quyết định VQuant. Nội dung bao gồm: đặc điểm dữ liệu chuỗi thời gian XAU/USD và bảng tổng hợp 20 chỉ báo kỹ thuật; cơ sở toán học của mạng tích chập 1D-CNN, mạng hồi quy BiGRU, cơ chế Multi-Head Attention và mô hình đề xuất CNN-BiGRU-Attention; thuật toán so khớp mẫu hình Cosine Similarity; mô hình ngôn ngữ FinBERT và từ điển VADER; nền tảng MetaTrader 5 (MQL5) và giao tiếp liên tiến trình IPC; thuật toán quản lý vốn ma trận DCA co giãn theo ATR và chiến lược phòng hộ Hedging; cùng các độ đo đánh giá hệ thống.*
 
 ---
 
@@ -15,70 +15,40 @@ Dữ liệu chuỗi thời gian của cặp XAU/USD có 3 đặc điểm động
 3. **Tính chất phi tuyến và tỷ lệ nhiễu cao:** Khoảng 65% – 70% thời gian thị trường nằm trong trạng thái tích lũy dao động hẹp (Sideway), và chỉ khoảng 30% – 35% thời gian xuất hiện xu hướng rõ ràng (Trending).
 
 ### 2.1.2 Các chỉ báo kỹ thuật cốt lõi
-Để chuyển đổi dữ liệu nến thô (OHLCV: Open, High, Low, Close, Volume) thành các đặc trưng toán học phục vụ huấn luyện mô hình học máy, hệ thống tính toán 7 nhóm chỉ báo kỹ thuật kinh điển:
+Để chuyển đổi dữ liệu nến thô (OHLCV) thành không gian đặc trưng toán học phục vụ huấn luyện mô hình học sâu, hệ thống trích xuất **20 đặc trưng kỹ thuật định lượng** thuộc 4 nhóm chính: xu hướng (Trend), động lượng (Momentum), độ biến động (Volatility) và khối lượng (Volume). Bảng 2.1 tổng hợp chi tiết các đặc trưng được sử dụng trong mã nguồn hệ thống:
 
-#### 1. Đường trung bình động hàm mũ (Exponential Moving Average - EMA)
-Đường EMA gán trọng số suy giảm theo hàm mũ cho các mức giá gần nhất, giúp phản ứng nhanh hơn so với đường trung bình động giản đơn (SMA):
+**Bảng 2.1: Bảng tổng hợp 20 đặc trưng kỹ thuật tài chính đầu vào của hệ thống**
 
-$$EMA_t = P_t \times \alpha + EMA_{t-1} \times (1 - \alpha)$$
+| STT | Tên đặc trưng | Nhóm chỉ báo | Ký hiệu / Mô tả ngắn | Miền giá trị chuẩn hóa |
+| :---: | :--- | :--- | :--- | :---: |
+| 1 | **EMA_20** | Xu hướng | Đường trung bình động hàm mũ 20 chu kỳ | $[0, 1]$ |
+| 2 | **EMA_50** | Xu hướng | Đường trung bình động hàm mũ 50 chu kỳ | $[0, 1]$ |
+| 3 | **EMA_200** | Xu hướng | Đường trung bình động hàm mũ 200 chu kỳ | $[0, 1]$ |
+| 4 | **EMA_Diff** | Động lượng | Độ lệch tương đối: $(EMA_{20} - EMA_{50}) / EMA_{50}$ | $[-1, 1]$ |
+| 5 | **RSI_14** | Động lượng | Chỉ số sức mạnh tương đối 14 chu kỳ ($RSI/100$) | $[0, 1]$ |
+| 6 | **MACD_Line** | Động lượng | Hiệu số hai đường trung bình động: $EMA_{12} - EMA_{26}$ | $[-1, 1]$ |
+| 7 | **MACD_Signal** | Động lượng | Đường tín hiệu: $EMA_9(\text{MACD Line})$ | $[-1, 1]$ |
+| 8 | **MACD_Hist** | Động lượng | Histogram xung lực: $\text{MACD Line} - \text{Signal Line}$ | $[-1, 1]$ |
+| 9 | **BB_Upper** | Biến động | Dải trên Bollinger Bands ($SMA_{20} + 2\sigma$) | $[0, 1]$ |
+| 10 | **BB_Lower** | Biến động | Dải dưới Bollinger Bands ($SMA_{20} - 2\sigma$) | $[0, 1]$ |
+| 11 | **BB_Width** | Biến động | Độ co thắt dải băng: $(\text{Upper} - \text{Lower}) / \text{Middle}$ | $[0, 1]$ |
+| 12 | **BB_PctB** | Biến động | Vị trí giá tương quan: $(Close - \text{Lower}) / (\text{Upper} - \text{Lower})$ | $[0, 1]$ |
+| 13 | **Stoch_K** | Động lượng | Đường dao động ngẫu nhiên $\%K$ chu kỳ 14 | $[0, 1]$ |
+| 14 | **Stoch_D** | Động lượng | Đường tín hiệu dao động $\%D = SMA_3(\%K)$ | $[0, 1]$ |
+| 15 | **ROC_10** | Động lượng | Tốc độ thay đổi giá so với 10 nến trước | $[-1, 1]$ |
+| 16 | **ATR_14** | Biến động | Độ biến động thực tế trung bình 14 chu kỳ | $[0, 1]$ |
+| 17 | **ATR_Ratio** | Biến động | Tỷ số biến động: $ATR_{14} / Close$ | $[0, 1]$ |
+| 18 | **Body_Size** | Hình thái nến | Tỷ lệ thân nến chuẩn hóa: $|Close - Open| / (High - Low)$ | $[0, 1]$ |
+| 19 | **Upper_Shadow**| Hình thái nến | Tỷ lệ bóng nến trên: $(High - \max(Open, Close)) / (High - Low)$ | $[0, 1]$ |
+| 20 | **Volume_Ratio**| Khối lượng | Tỷ số khối lượng giao dịch so với trung bình 20 nến | $[0, 1]$ |
 
-Trong đó $P_t$ là giá đóng cửa tại thời điểm $t$, hệ số làm mượt $\alpha = \frac{2}{N + 1}$ với $N$ là chu kỳ nến ($N = 20$ và $N = 50$). Độ lệch tương đối giữa hai đường EMA thể hiện xung lượng xu hướng:
-
-$$\Delta EMA_t = \frac{EMA_{20, t} - EMA_{50, t}}{EMA_{50, t}} \times 100\%$$
-
-#### 2. Chỉ số sức mạnh tương đối (Relative Strength Index - RSI)
-RSI đo lường xung lực biến động giá nhằm xác định vùng quá mua ($RSI > 70$) hoặc quá bán ($RSI < 30$) trên miền giá trị $[0, 100]$:
-
-$$RSI = 100 - \left( \frac{100}{1 + RS} \right), \quad RS = \frac{\text{Average Gain}_n}{\text{Average Loss}_n}$$
-
-Chỉ số RSI 14 chu kỳ ($RSI_{14}$) được chuẩn hóa về đoạn $[0, 1]$ qua phép biến đổi: $RSI_{\text{norm}} = \frac{RSI_{14}}{100}$.
-
-#### 3. Đường trung bình động hội tụ phân kỳ (MACD)
-MACD phản ánh sự tương tác động lượng giữa xu hướng ngắn hạn và trung hạn:
-
-$$\text{MACD Line} = EMA_{12}(P) - EMA_{26}(P)$$
-
-$$\text{Signal Line} = EMA_{9}(\text{MACD Line})$$
-
-$$\text{MACD Histogram} = \text{MACD Line} - \text{Signal Line}$$
-
-Khi Histogram chuyển từ âm sang dương, xung lực tăng bắt đầu chiếm ưu thế và ngược lại.
-
-#### 4. Dải băng Bollinger (Bollinger Bands)
-Dải Bollinger xác định biên độ dao động chuẩn tắc xung quanh đường trung bình động $SMA_{20}$:
-
-$$\text{Middle Band} = SMA_{20}(P)$$
-
-$$\text{Upper Band} = SMA_{20}(P) + 2 \times \sigma_{20}$$
-
-$$\text{Lower Band} = SMA_{20}(P) - 2 \times \sigma_{20}$$
-
-Trong đó $\sigma_{20}$ là độ lệch chuẩn giá đóng cửa 20 chu kỳ. Tỷ lệ vị trí giá trong dải (%B) được tính theo công thức:
-
-$$\%B = \frac{P_t - \text{Lower Band}}{\text{Upper Band} - \text{Lower Band}}$$
-
-#### 5. Chỉ báo dao động ngẫu nhiên (Stochastic Oscillator)
-Stochastic đo lường vị trí giá đóng cửa so với biên độ đỉnh - đáy trong 14 chu kỳ nến:
-
-$$\%K = \frac{Close_t - \min_{14}(Low)}{\max_{14}(High) - \min_{14}(Low)} \times 100, \quad \%D = SMA_3(\%K)$$
-
-#### 6. Tốc độ thay đổi giá (Rate of Change - ROC)
-ROC phản ánh gia tốc biến động của đường giá so với 10 nến trước đó:
-
-$$ROC_t = \frac{Close_t - Close_{t-10}}{Close_{t-10}} \times 100\%$$
-
-#### 7. Độ biến động thực tế trung bình (Average True Range - ATR)
-ATR đo lường biên độ dao động thực tế của nến. Phạm vi thực tế (True Range - TR) tại nến $t$ được xác định bởi:
+Trong các chỉ báo trên, **Độ biến động thực tế trung bình (Average True Range - ATR)** đóng vai trò trọng tâm trong toàn bộ hệ sinh thái VQuant. Nó vừa là đặc trưng đầu vào cho mô hình AI, vừa là tham số điều khiển thuật toán lưới lệnh DCA co giãn trong Robot MQL5. Khoảng biến động thực tế ($TR$) tại nến $t$ và chỉ số $ATR$ chu kỳ 14 được tính toán theo công thức:
 
 $$TR_t = \max \left( High_t - Low_t, \, |High_t - Close_{t-1}|, \, |Low_t - Close_{t-1}| \right)$$
 
-Chỉ số ATR 14 chu kỳ được tính theo công thức làm mượt của Wilder:
-
 $$ATR_{14, t} = \frac{ATR_{14, t-1} \times 13 + TR_t}{14}$$
 
-Chỉ số ATR không chỉ là đặc trưng đầu vào cho mô hình AI mà còn đóng vai trò then chốt để thuật toán Robot MQL5 tự động co giãn bước giá lưới lệnh (Grid Spacing) và khoảng cách chốt lời.
-
-Sau quá trình tính toán, hệ thống trích xuất tổng cộng 20 đặc trưng kỹ thuật chuẩn hóa cho mỗi bước thời gian. Mức độ đóng góp của các nhóm đặc trưng được phân tích trực quan trên Hình 2.1:
+Mức độ đóng góp và tầm quan trọng của từng nhóm đặc trưng kỹ thuật đối với mô hình dự báo được thể hiện trực quan trên biểu đồ Hình 2.1:
 
 ![Hình 2.1: Phân tích độ quan trọng của các đặc trưng kỹ thuật tài chính](hinh_anh/feature_importance_analysis.png)
 
@@ -87,101 +57,85 @@ Sau quá trình tính toán, hệ thống trích xuất tổng cộng 20 đặc 
 ## 2.2 Các mô hình học sâu và so khớp mẫu hình
 
 ### 2.2.1 Mạng nơ-ron tích chập một chiều (1D-CNN)
-Mạng tích chập một chiều (1D-CNN) là giải pháp hiệu quả để trích xuất đặc trưng hình thái từ dữ liệu chuỗi thời gian đa biến (Multivariate Time Series). 
+Mạng tích chập một chiều (1D-CNN) là giải pháp hiệu quả để trích xuất các mẫu hình nến cục bộ (Local Candle Patterns) từ dữ liệu chuỗi thời gian đa biến.
 
 Phép tích chập 1D thực hiện trượt một bộ lọc (Kernel) kích thước $(k, d)$ dọc theo trục thời gian:
 
-$$y_t = f \left( \sum_{i=0}^{k-1} W_i \cdot x_{t+i} + b \right)$$
+$$y_t = \text{ReLU} \left( \sum_{i=0}^{k-1} W_i \cdot x_{t+i} + b \right)$$
 
-Trong đó $x_t \in \mathbb{R}^d$ là vector đặc trưng tại thời điểm $t$ ($d = 20$), $W \in \mathbb{R}^{k \times d}$ là ma trận trọng số bộ lọc, $b$ là hệ số điều chỉnh bias và $f(\cdot)$ là hàm kích hoạt phi tuyến ReLU.
+Trong đó $x_t \in \mathbb{R}^d$ là vector đặc trưng tại bước thời gian $t$ ($d = 20$), $W$ là ma trận trọng số bộ lọc và $b$ là hệ số điều chỉnh bias. 
 
-Ưu điểm nổi bật của 1D-CNN trong bài toán tài chính:
-–  **Khả năng bất biến tịnh tiến cục bộ:** Nhận diện các mẫu hình nến đảo chiều điển hình (Pinbar, nến nhấn chìm Engulfing) mà không phụ thuộc vào mức giá tuyệt đối.
-–  **Chia sẻ trọng số (Weight Sharing):** Giảm thiểu số lượng tham số cần tối ưu, giúp mô hình hạn chế hiện tượng học vẹt (Overfitting) so với mạng nơ-ron truyền thống.
+Nhờ cơ chế chia sẻ trọng số (Weight Sharing) và tính bất biến tịnh tiến cục bộ (Local Translation Invariance), tầng 1D-CNN tự động nhận diện các hình thái nến đảo chiều quan trọng (như nến Pinbar rút râu, nến nhấn chìm Engulfing) mà không làm bùng nổ số lượng tham số cần huấn luyện.
 
 ### 2.2.2 Mạng hồi quy có cổng hai chiều (BiGRU)
-Mạng hồi quy truyền thống (RNN) gặp phải vấn đề triệt tiêu hoặc bùng nổ đạo hàm khi xử lý chuỗi dài. Mô hình GRU (Gated Recurrent Unit) khắc phục nhược điểm này thông qua hai cổng kiểm soát dòng thông tin:
+Để mô hình hóa sự phụ thuộc thời gian dài hạn mà không gặp phải hiện tượng triệt tiêu đạo hàm, đề tài lựa chọn kiến trúc **GRU (Gated Recurrent Unit)** thay vì LSTM truyền thống, bởi GRU tinh gọn hơn (giảm 25% tham số), tốc độ huấn luyện nhanh và giảm thiểu rủi ro quá khớp trên tập dữ liệu chuỗi tài chính.
+
+Cơ chế điều khiển dòng thông tin của GRU được xác định bởi hai cổng:
 
 $$\text{Cổng cập nhật (Update Gate):} \quad z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)$$
 
 $$\text{Cổng đặt lại (Reset Gate):} \quad r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)$$
 
-$$\text{Trạng thái ứng viên (Candidate State):} \quad \tilde{h}_t = \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h)$$
+$$\text{Trạng thái ẩn (Hidden State):} \quad h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h)$$
 
-$$\text{Trạng thái ẩn cuối cùng (Hidden State):} \quad h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$$
+Trên một cửa sổ trượt $T = 50$ nến H4, kiến trúc **BiGRU (Bidirectional GRU)** xem xét chuỗi theo cả hai chiều thuận (từ quá khứ đến hiện tại) và nghịch (từ hiện tại về quá khứ) để tạo ra vector trạng thái tổng hợp $H_t$:
 
-So với mô hình LSTM, GRU giảm bớt khoảng 25% tham số tính toán nhưng vẫn duy trì hiệu năng tương đương, giúp tăng tốc độ suy luận và giảm rủi ro quá khớp trên tập dữ liệu chuỗi nến tài chính.
-
-Trong một cửa sổ trượt quá khứ $T = 50$ nến H4, kiến trúc **BiGRU (Bidirectional GRU)** xem xét chuỗi theo cả hai chiều thời gian thuận và nghịch:
-
-$$\vec{h}_t = \overrightarrow{\text{GRU}}(x_t, \vec{h}_{t-1}), \quad \overleftarrow{h}_t = \overleftarrow{\text{GRU}}(x_t, \overleftarrow{h}_{t+1}), \quad H_t = [\vec{h}_t \,\|\, \overleftarrow{h}_t]$$
-
-Trạng thái tổng hợp $H_t$ giúp mô hình nắm bắt trọn vẹn cả xung lực tích lũy từ quá khứ lẫn phản ứng giá tại các điểm đảo chiều.
+$$H_t = [\overrightarrow{h}_t \,\|\, \overleftarrow{h}_t] = [\overrightarrow{\text{GRU}}(x_t, \vec{h}_{t-1}) \,\|\, \overleftarrow{\text{GRU}}(x_t, \overleftarrow{h}_{t+1})]$$
 
 ### 2.2.3 Cơ chế Chú ý đa đầu (Multi-Head Self-Attention)
-Trong chuỗi 50 nến H4, các cây nến không có vai trò bình đẳng đối với xu hướng tiếp theo. Cơ chế Chú ý (Self-Attention) cho phép mô hình tự động gán trọng số tập trung vào những cây nến mang tính bước ngoặt (nến phá vỡ Breakout hoặc nến bão tin vĩ mô).
+Trong một chuỗi 50 nến, các cây nến biến động bước ngoặt (Breakout hoặc nến tin vĩ mô) có tầm ảnh hưởng lớn hơn nhiều so với các nến tích lũy nhỏ. Cơ chế Chú ý (Self-Attention) cho phép mô hình tự động phân bổ trọng số tập trung vào những nến quan trọng này.
 
-Đầu ra $H$ từ tầng BiGRU được chiếu tuyến tính thành ba ma trận Truy vấn ($Q$), Khóa ($K$) và Giá trị ($V$):
-
-$$Q = H W^Q, \quad K = H W^K, \quad V = H W^V$$
-
-Trọng số chú ý được tính thông qua tích vô hướng chuẩn hóa:
+Ma trận trọng số chú ý được tính thông qua tích vô hướng chuẩn hóa giữa Truy vấn ($Q$), Khóa ($K$) và Giá trị ($V$):
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} \right) V$$
 
-Trong đó hệ số chia $\sqrt{d_k}$ giúp ổn định gradient. Mô hình mở rộng sang kiến trúc **Multi-Head Attention** với $h = 4$ đầu chú ý độc lập:
-
-$$\text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)$$
-
-$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O$$
-
-Để duy trì dòng gradient và bảo toàn thông tin nền tảng, đầu ra được cộng kết nối tắt (Residual Connection) kết hợp chuẩn hóa tầng (LayerNorm):
+Trong đó hệ số chia $\sqrt{d_k}$ giúp ổn định gradient. Mô hình mở rộng sang kiến trúc **Multi-Head Attention** gồm $h = 4$ đầu chú ý song song kết hợp tầng kết nối tắt phần dư (Residual Connection) và chuẩn hóa tầng (LayerNorm):
 
 $$\text{Output}_{\text{Attn}} = \text{LayerNorm}\left( H + \text{MultiHead}(H, H, H) \right)$$
 
 ### 2.2.4 Mô hình đề xuất CNN-BiGRU-Attention
-Đề tài đề xuất mô hình lai **CNN-BiGRU-Attention** tích hợp điểm mạnh của cả ba cơ chế:
-–  **Khối Dual 1D-CNN:** Gồm tầng Conv1D (48 bộ lọc, kernel=3) kèm Batch Normalization, tiếp nối bởi Conv1D (32 bộ lọc, kernel=3) và MaxPooling1D(2) để trích xuất đặc trưng hình thái nến.
-–  **Khối BiGRU:** 32 units xử lý chuỗi 2 chiều, trả về chuỗi vector trạng thái thời gian.
-–  **Khối Multi-Head Attention:** 4 heads chú ý tự động cân chỉnh trọng số nến quan trọng.
-–  **Tầng nén & Phân loại:** GlobalAveragePooling1D nén chuỗi thời gian, đi qua các tầng Dense(32, ReLU), Dropout(0.2), Dense(16, ReLU) và kết thúc bằng tầng Softmax 3 lớp: $[P(\text{HOLD}), P(\text{BUY}), P(\text{SELL})]$.
+Mô hình đề xuất **CNN-BiGRU-Attention** tích hợp điểm mạnh của cả ba cơ chế trên thành một đường ống luồng tensor liền mạch:
+–  **Khối Dual Conv1D:** Conv1D (48 bộ lọc, kernel=3) $\rightarrow$ BatchNorm $\rightarrow$ Conv1D (32 bộ lọc, kernel=3) $\rightarrow$ MaxPooling1D(2).
+–  **Khối BiGRU:** 32 units xử lý chuỗi hai chiều.
+–  **Khối Multi-Head Attention:** 4 heads chú ý độc lập cân chỉnh trọng số nến.
+–  **Tầng nén & Phân loại:** GlobalAveragePooling1D nén chuỗi thời gian, đi qua Dense(32) $\rightarrow$ Dropout(0.2) $\rightarrow$ Dense(16) $\rightarrow$ Dense(3, Softmax) để xuất ra phân phối xác suất 3 lớp: $[P(\text{HOLD}), P(\text{BUY}), P(\text{SELL})]$.
 
-Để giải quyết bài toán mất cân bằng nhãn (lớp HOLD thường chiếm tỷ lệ cao hơn BUY và SELL), hàm mất mát Categorical Cross-Entropy có trọng số lớp (Class Weights) được áp dụng:
+Để khắc phục hiện tượng mất cân bằng nhãn (lớp HOLD chiếm đa số), mô hình sử dụng hàm mất mát Categorical Cross-Entropy có trọng số phạt nghịch đảo tần suất lớp (Class Weights):
 
 $$\mathcal{L} = - \sum_{c=1}^{3} w_c \cdot y_c \cdot \log(\hat{y}_c), \quad w_c = \frac{N_{\text{total}}}{3 \times N_c}$$
 
-Quy trình tiền xử lý dữ liệu và luồng huấn luyện mô hình được mô tả chi tiết trên Hình 2.2:
+Sơ đồ cấu trúc mạng dạng khối tensor trực quan và luồng biến đổi dữ liệu được thể hiện trên Hình 2.2:
 
-![Hình 2.2: Luồng tiền xử lý và kiến trúc mô hình CNN-BiGRU-Attention](hinh_anh/ai_training_pipeline.png)
+![Hình 2.2: Sơ đồ kiến trúc mô hình học sâu CNN-BiGRU-Attention](hinh_anh/clean_neural_architecture.png)
 
 ### 2.2.5 Thuật toán so khớp mẫu hình (KNN Pattern Matcher)
-Bên cạnh mô hình học sâu, hệ thống kết hợp thuật toán so khớp mẫu hình giá dựa trên nguyên lý: "Biến động thị trường trong quá khứ có xu hướng tự lặp lại":
+Bên cạnh mô hình học sâu, hệ thống kết hợp thuật toán so khớp mẫu hình dựa trên nguyên lý: "Biến động thị trường trong quá khứ có xu hướng tự lặp lại".
 
-1. Trích xuất vector giá đóng cửa $P = [p_1, p_2, \dots, p_K]$ của $K=20$ nến hiện tại.
-2. Chuẩn hóa hình dáng đường giá theo phương pháp Min-Max cục bộ để loại bỏ yếu tố mức giá tuyệt đối:
+Vector hình thái $K=20$ nến hiện tại $P$ và các cửa sổ quá khứ $Q_j$ được chuẩn hóa Min-Max cục bộ về đoạn $[0, 1]$:
 
 $$\bar{p}_i = \frac{p_i - \min(P)}{\max(P) - \min(P)}$$
 
-3. Quét toàn bộ kho dữ liệu lịch sử $N$ nến H4, trích xuất từng cửa sổ trượt $Q_j$ độ dài $K$ và chuẩn hóa thành $\bar{Q}_j$.
-4. Tính độ tương đồng Cosine (Cosine Similarity) giữa vector hiện tại $\bar{P}$ và từng vector quá khứ $\bar{Q}_j$:
+Độ tương đồng hình thái sóng giá được đo lường bằng độ đo góc Cosine (Cosine Similarity):
 
 $$\text{Sim}(\bar{P}, \bar{Q}_j) = \frac{\bar{P} \cdot \bar{Q}_j}{\|\bar{P}\|_2 \cdot \|\bar{Q}_j\|_2} = \frac{\sum_{i=1}^{K} \bar{p}_i \bar{q}_{j,i}}{\sqrt{\sum_{i=1}^{K} \bar{p}_i^2} \sqrt{\sum_{i=1}^{K} \bar{q}_{j,i}^2}}$$
 
-5. Chọn lọc Top 5 kịch bản lịch sử có độ tương đồng cao nhất ($\text{Sim} \ge 0.90$). Nếu đa số các kịch bản tương đồng sau đó tăng giá, hệ thống sẽ cộng điểm thiên hướng (Probability Bias) cho quyết định BUY và ngược lại.
+Thuật toán chọn ra Top 5 kịch bản lịch sử có độ tương đồng cao nhất ($\text{Sim} \ge 0.90$) để đưa ra gợi ý xác suất (Probability Bias) hỗ trợ mô hình học sâu. Nguyên lý so khớp hình thái sóng được minh họa trực quan trên Hình 2.3:
+
+![Hình 2.3: Nguyên lý so khớp mẫu hình chuỗi thời gian Cosine Similarity](hinh_anh/clean_pattern_matching.png)
 
 ---
 
 ## 2.3 Xử lý ngôn ngữ tự nhiên trong phân tích tin tức
 
 ### 2.3.1 Mô hình ngôn ngữ FinBERT
-**FinBERT** là mô hình xử lý ngôn ngữ tự nhiên dựa trên kiến trúc Transformer hai chiều (BERT), được huấn luyện chuyên sâu trên kho ngữ liệu tài chính Wall Street (Financial PhraseBank, báo cáo tài chính thường niên 10-K, 10-Q, tin tức Reuters và Bloomberg).
+**FinBERT** là mô hình xử lý ngôn ngữ tự nhiên dựa trên Transformer hai chiều (BERT), được huấn luyện chuyên sâu trên tập ngữ liệu tài chính khổng lồ từ Wall Street (Financial PhraseBank, báo cáo thường niên 10-K, 10-Q, tin tức Reuters, Bloomberg). 
 
-Khác với các mô hình ngôn ngữ chung, FinBERT hiểu chính xác ngữ nghĩa chuyên ngành của các thuật ngữ kinh tế (ví dụ: từ "hawkish" thể hiện chính sách tiền tệ thắt chặt, từ "yield surge" thể hiện lợi suất trái phiếu tăng vọt), cho phép phân loại sắc thái câu chữ thành 3 nhãn: Tích cực (Positive), Tiêu cực (Negative) hoặc Trung tính (Neutral).
+Nhờ đó, FinBERT hiểu chính xác ngữ nghĩa chuyên ngành của các thuật ngữ kinh tế (ví dụ: từ "hawkish" thể hiện chính sách tiền tệ thắt chặt, từ "rate hike" thể hiện tăng lãi suất), phân loại sắc thái tin tức thành 3 nhãn: Tích cực (Positive), Tiêu cực (Negative) hoặc Trung tính (Neutral).
 
-### 2.3.2 Phân tích cảm xúc dựa trên từ điển VADER
-Để đáp ứng yêu cầu xử lý tức thời với độ trễ thấp trên máy trạm thực thi, hệ thống kết hợp mô hình FinBERT với bộ từ điển phân tích cảm xúc tài chính mở rộng **VADER Financial Lexicon**:
+### 2.3.2 Phân tích cảm xúc kết hợp từ điển VADER
+Để đạt tốc độ xử lý microsecond trên máy trạm thực thi, hệ thống tích hợp bộ từ điển sắc thái tài chính mở rộng **VADER Financial Lexicon**:
 
-**Bảng 2.1: Bảng trọng số từ khóa kinh tế vĩ mô trong hệ thống**
+**Bảng 2.2: Bảng trọng số từ khóa kinh tế vĩ mô trong hệ thống**
 
 | Từ khóa kinh tế vĩ mô | Nhóm tác động | Trọng số tác động | Ý nghĩa thực tế |
 | :--- | :---: | :---: | :--- |
@@ -219,18 +173,12 @@ Robot Expert Advisor được lập trình bằng ngôn ngữ **MQL5** theo mô 
 –  `CDashboard`: Bảng điều khiển giao diện đồ họa nút bấm trực tiếp trên biểu đồ.
 
 ### 2.4.2 Cơ chế giao tiếp liên tiến trình (IPC)
-Tiến trình phân tích AI chạy trên Python và Robot thực thi lệnh chạy trên MetaTrader 5 hoạt động độc lập trong hai không gian bộ nhớ riêng biệt. Hệ thống thiết lập cầu nối giao tiếp liên tiến trình (IPC) thông qua tệp chia sẻ trung gian (`vc_signal_XAUUSD.txt`) đặt tại thư mục dùng chung của MT5 (`Common/Files`).
+Tiến trình phân tích AI chạy trên Python và Robot thực thi lệnh chạy trên MetaTrader 5 hoạt động độc lập trong hai không gian bộ nhớ riêng biệt. Hệ thống thiết lập cầu nối giao tiếp liên tiến trình (IPC) thông qua tệp chia sẻ trung gian (`vc_signal_XAUUSDm.txt`) đặt tại thư mục dùng chung của MT5 (`Common/Files`).
 
 Mỗi chu kỳ nến H4, Python xuất ra bản ghi định dạng JSON:
 `{"timestamp": "2026-10-25 14:00:00", "signal": "BUY", "confidence": 0.68, "atr": 28.5}`
 
-**Cơ chế phòng thủ an toàn (Watchdog Timeout):**
-Mỗi khi đọc tệp tín hiệu, Robot MQL5 kiểm tra độ chênh lệch thời gian:
-
-$$\Delta T = T_{\text{current}} - T_{\text{signal}}$$
-
-–  Nếu $\Delta T \le 4\text{ giờ}$: Tín hiệu còn hiệu lực, Robot thực thi lệnh theo định hướng của AI.
-–  Nếu $\Delta T > 4\text{ giờ}$ hoặc tệp không tồn tại: Robot tự động kích hoạt trạng thái an toàn `AI_OFFLINE / FAILSAFE`, hiển thị cảnh báo trên biểu đồ và chuyển sang chế độ tự hành bảo toàn vốn, ngăn chặn rủi ro thực thi theo tín hiệu cũ đã lỗi thời.
+Mỗi khi đọc tệp tín hiệu, Robot MQL5 kiểm tra độ trễ thời gian $\Delta T = T_{\text{current}} - T_{\text{signal}}$. Nếu $\Delta T > 4\text{ giờ}$ hoặc tệp không tồn tại, Robot tự động kích hoạt trạng thái an toàn `AI_OFFLINE / FAILSAFE`, hiển thị cảnh báo trên biểu đồ và chuyển sang chế độ tự hành bảo toàn vốn, ngăn chặn rủi ro thực thi theo tín hiệu cũ đã lỗi thời.
 
 ---
 
@@ -247,7 +195,7 @@ Chiến lược trung bình giá (DCA) truyền thống sử dụng bước giá
 Hệ thống VQuant giải quyết triệt để rủi ro này bằng thuật toán **Lưới DCA co giãn theo biến động ATR**:
 
 #### 1. Bước giá co giãn động
-Khoảng cách giá để mở lệnh thứ $k$ ($k \ge 1$) được điều chỉnh theo công thức:
+Khoảng cách giá để mở lệnh thứ $k$ ($k \ge 1$) được điều chỉnh tự động theo công thức:
 
 $$\text{Spacing}_k = \text{BaseSpacing} \times \left( \frac{ATR_{14, \text{current}}}{ATR_{14, \text{baseline}}} \right) \times \gamma^{(k-1)}$$
 
@@ -267,9 +215,9 @@ $$P_{\text{BreakEven}} = \frac{\sum_{i=1}^{m} \text{Lot}_i \times \text{OpenPric
 
 Mức chốt lời tổng thể được dời về: $P_{\text{TP}} = P_{\text{BreakEven}} \pm \Delta_{\text{Target}}$. Chỉ cần thị trường có một nhịp hồi nhẹ (Pullback chiếm 25% – 35% biên độ sóng giảm), toàn bộ rổ lệnh sẽ tự động đóng đồng loạt với tổng lợi nhuận dương.
 
-Nguyên lý co giãn bước giá và tối ưu điểm hòa vốn được minh họa chi tiết trên Hình 2.3:
+Nguyên lý co giãn bước giá và tối ưu điểm hòa vốn trên biểu đồ đường giá thực chiến được thể hiện trên Hình 2.4:
 
-![Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR](hinh_anh/dca_grid_mechanism.png)
+![Hình 2.4: Nguyên lý quản lý vốn lưới DCA co giãn theo ATR và tối ưu điểm hòa vốn](hinh_anh/clean_dca_grid_mechanism.png)
 
 ### 2.5.3 Cơ chế phòng hộ hai chiều (Hedging)
 Để phòng ngừa các đợt bão giá một chiều cực đoan, hệ thống tích hợp cơ chế phòng vệ **Hedging**:
@@ -283,52 +231,35 @@ Nguyên lý co giãn bước giá và tối ưu điểm hòa vốn được minh
 ## 2.6 Các độ đo đánh giá hệ thống
 
 ### 2.6.1 Độ đo đánh giá mô hình học máy
-Từ ma trận nhầm lẫn (Confusion Matrix) cho bài toán phân loại 3 lớp (BUY, HOLD, SELL), các độ đo được tính toán theo công thức:
+Từ ma trận nhầm lẫn (Confusion Matrix) cho bài toán phân loại 3 lớp (BUY, HOLD, SELL), hệ thống sử dụng chỉ số **Macro F1-Score** làm thước đo trung tâm để đánh giá độ chính xác cân bằng giữa các lớp:
 
-–  **Độ chính xác tổng thể (Accuracy):**
-   $$\text{Accuracy} = \frac{\sum_{c=1}^{3} TP_c}{N_{\text{total}}}$$
+$$\text{Macro } F1 = \frac{1}{3} \sum_{c=1}^{3} \left( 2 \times \frac{\text{Precision}_c \times \text{Recall}_c}{\text{Precision}_c + \text{Recall}_c} \right)$$
 
-–  **Độ chuẩn xác (Precision):**
-   $$\text{Precision}_c = \frac{TP_c}{TP_c + FP_c}$$
+*Ý nghĩa thống kê:* Với bài toán phân loại 3 lớp trên dữ liệu chuỗi thời gian tài chính có độ nhiễu cao, độ chính xác ngẫu nhiên là $33.33\%$. Do đó, mô hình đạt độ chính xác từ $36\% - 42\%$ với Macro F1 cân bằng đã đại diện cho một lợi thế thống kê thực tế có ý nghĩa. Kết quả ma trận nhầm lẫn thực tế của mô hình đề xuất được thể hiện trên Hình 2.5:
 
-–  **Độ thu hồi (Recall):**
-   $$\text{Recall}_c = \frac{TP_c}{TP_c + FN_c}$$
-
-–  **Điểm F1 trung bình điều hòa (Macro F1-Score):**
-   $$F1_c = 2 \times \frac{\text{Precision}_c \times \text{Recall}_c}{\text{Precision}_c + \text{Recall}_c}, \quad \text{Macro } F1 = \frac{1}{3} \sum_{c=1}^{3} F1_c$$
-
-*Ý nghĩa thống kê:* Với bài toán phân loại 3 lớp trên dữ liệu chuỗi thời gian tài chính có độ nhiễu cao, độ chính xác ngẫu nhiên là $33.33\%$. Do đó, mô hình đạt độ chính xác từ $36\% - 42\%$ với Macro F1 cân bằng đã đại diện cho một lợi thế thống kê thực tế có ý nghĩa.
+![Hình 2.5: Ma trận nhầm lẫn đánh giá phân loại 3 lớp của mô hình đề xuất](hinh_anh/confusion_matrix_cnn_bigru.png)
 
 ### 2.6.2 Độ đo đánh giá hiệu quả tài chính
-Hệ thống sử dụng các chỉ số định lượng tài chính chuẩn mực để đo lường mức độ tương quan giữa lợi nhuận và rủi ro:
+Hệ thống sử dụng hai chỉ số định lượng tài chính cốt lõi để đo lường mức độ tương quan giữa lợi nhuận và rủi ro:
 
 –  **Mức sụt giảm tài khoản tối đa (Maximum Drawdown - MDD):**
-   $$\text{Drawdown}_t = \frac{\max_{0 \le \tau \le t}(Equity_\tau) - Equity_t}{\max_{0 \le \tau \le t}(Equity_\tau)}, \quad MDD = \max_{t} (\text{Drawdown}_t) \times 100\%$$
-   Chỉ số đo lường rủi ro vốn lớn nhất từng xảy ra; yêu cầu hệ thống duy trì MDD dưới ngưỡng 25%.
+   $$MDD = \max_{t} \left( \frac{\max_{0 \le \tau \le t}(Equity_\tau) - Equity_t}{\max_{0 \le \tau \le t}(Equity_\tau)} \right) \times 100\%$$
+   Chỉ số đo lường rủi ro vốn lớn nhất từng xảy ra; yêu cầu hệ thống duy trì MDD luôn dưới ngưỡng 25%.
 
 –  **Tỷ số Sharpe (Sharpe Ratio):** Đo lường lợi nhuận vượt trội trên một đơn vị rủi ro tổng thể:
    $$\text{Sharpe Ratio} = \frac{\mathbb{E}[R_p - R_f]}{\sigma_p}$$
-
-–  **Tỷ số Sortino (Sortino Ratio):** Chỉ đo lường rủi ro đối với các biến động sụt giảm vốn tiêu cực:
-   $$\text{Sortino Ratio} = \frac{\mathbb{E}[R_p - R_f]}{\sigma_{\text{downside}}}, \quad \sigma_{\text{downside}} = \sqrt{\frac{1}{T} \sum_{t=1}^{T} \min(0, R_{p,t} - R_f)^2}$$
-
-–  **Tỷ số Calmar (Calmar Ratio):** Đo lường tỷ lệ giữa lợi nhuận kép hàng năm và mức sụt giảm lớn nhất:
-   $$\text{Calmar Ratio} = \frac{\text{Annualized Compound Return}}{MDD}$$
-
-–  **Hệ số sinh lời (Profit Factor - PF):** Tỷ lệ giữa tổng tiền lãi và tổng tiền lỗ:
-   $$\text{Profit Factor} = \frac{\sum \text{Gross Profits}}{\sum |\text{Gross Losses}|}$$
-   Chiến lược giao dịch được coi là có lãi bền vững khi $\text{Profit Factor} > 1.5$.
+   Trong đó $R_p$ là tỷ suất sinh lời của chiến lược, $R_f$ là tỷ suất sinh lời phi rủi ro, và $\sigma_p$ là độ lệch chuẩn của tỷ suất sinh lời. Tỷ số Sharpe $> 2.0$ khẳng định chiến lược đạt hiệu quả sinh lời vượt trội với mức biến động rủi ro thấp.
 
 ---
 
 ## 2.7 Tóm tắt chương 2
 
 Trong Chương 2, đồ án đã trình bày toàn diện nền tảng lý thuyết và công nghệ áp dụng cho hệ thống VQuant:
-–  Phân tích đặc điểm chuỗi thời gian của cặp XAU/USD và cơ sở toán học của 7 nhóm chỉ báo kỹ thuật cốt lõi (EMA, RSI, MACD, Bollinger Bands, Stochastic, ROC, ATR).
-–  Xây dựng cơ sở lý thuyết của mạng học sâu 1D-CNN, mạng hồi quy BiGRU, cơ chế Multi-Head Attention, mô hình kết hợp CNN-BiGRU-Attention và thuật toán so khớp mẫu hình Cosine Similarity.
+–  Phân tích đặc điểm chuỗi thời gian của cặp XAU/USD và chuẩn hóa bảng 20 đặc trưng kỹ thuật tài chính cốt lõi.
+–  Xây dựng cơ sở lý thuyết toán học của mạng học sâu 1D-CNN, mạng hồi quy BiGRU, cơ chế Multi-Head Attention, mô hình kết hợp CNN-BiGRU-Attention và thuật toán so khớp mẫu hình Cosine Similarity.
 –  Xây dựng phương pháp phân tích cảm xúc tin tức vĩ mô bằng mô hình Transformer FinBERT kết hợp từ điển VADER và thuật toán đảo chiều cảm xúc.
 –  Làm rõ cấu trúc module hướng đối tượng MQL5 trên MetaTrader 5 và cơ chế giao tiếp liên tiến trình IPC qua tệp chia sẻ kèm cơ chế phòng thủ Watchdog Timeout.
 –  Thiết lập nguyên lý quản lý vốn lưới ma trận DCA co giãn động theo ATR và chiến lược phòng hộ Hedging khóa rủi ro.
 –  Xác lập đầy đủ các độ đo đánh giá cả về mặt Học máy và Tài chính định lượng.
 
-Toàn bộ cơ sở lý thuyết và công nghệ này là nền tảng để triển khai phần **Thiết kế, cài đặt và đánh giá hệ thống** trong **Chương 3**.
+Toàn bộ cơ sở lý thuyết và công nghệ này là nền tảng trực tiếp để triển khai phần **Thiết kế, cài đặt và đánh giá hệ thống** trong **Chương 3**.

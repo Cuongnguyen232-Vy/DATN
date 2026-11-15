@@ -115,7 +115,7 @@ def add_cover_box(doc, chapter_title):
     table.autofit = False
 
     data = [
-        ("Tên đề tài:", "Nghiên cứu mô hình học máy trong dự đoán xu hướng thị trường tài chính và phát triển hệ thống giao dịch tự động"),
+        ("Tên đề tài:", "Xây dựng hệ thống hỗ trợ ra quyết định giao dịch tài chính sử dụng dữ liệu chuỗi thời gian"),
         ("Sinh viên thực hiện:", "Nguyễn Mạnh Cường"),
         ("Mã sinh viên / Lớp:", "B22DCCN099   |   Lớp: D22CNPM02"),
         ("Ngành đào tạo:", "Công nghệ thông tin (Hệ Đại học chính quy 2022 - 2027)"),
@@ -686,13 +686,13 @@ def build_chapter_1():
     """Tạo file Word độc lập cho Chương 1"""
     doc = docx.Document()
     apply_ptit_page_setup(doc)
-    add_cover_box(doc, "CHƯƠNG 1. TỔNG QUAN VỀ BÀI TOÁN DỰ ĐOÁN XU HƯỚNG\nVÀ GIAO DỊCH TỰ ĐỘNG TRÊN THỊ TRƯỜNG TÀI CHÍNH")
+    add_cover_box(doc, "CHƯƠNG 1. TỔNG QUAN VỀ BÀI TOÁN VÀ HỆ THỐNG\nHỖ TRỢ RA QUYẾT ĐỊNH GIAO DỊCH TÀI CHÍNH")
     add_abbreviations_table(doc)
 
     md_p = r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md"
     parse_and_write_markdown(doc, md_p, chapter_num=1)
 
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
+    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ thống hỗ trợ ra quyết định giao dịch tài chính VQuant", width_inch=5.2)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_NguyenManhCuong_B22DCCN099.docx"
     safe_save(doc, out_p)

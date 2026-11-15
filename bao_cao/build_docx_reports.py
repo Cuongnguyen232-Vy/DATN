@@ -9,7 +9,7 @@ import os
 import re
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
@@ -496,66 +496,49 @@ def clean_latex_formula(s):
 def add_math_formula(doc, formula_text, eq_number=None):
     """
     Thêm công thức toán học chuẩn quy cách đồ án tốt nghiệp PTIT:
-    - Bảng 1 hàng, 2 cột hoàn toàn không viền
-    - Cột trái: Căn giữa, chứa công thức dạng ký hiệu toán học Cambria Math, có subscript/superscript thật
-    - Cột phải: Căn phải, hiển thị số thứ tự công thức (ví dụ: (2.4))
-    - Tuyệt đối không dùng khung nền màu xám thô ráp
+    Sử dụng cơ chế Tab Stop (Center Tab ở 3.15 in, Right Tab ở 6.30 in)
+    - Loại bỏ hoàn toàn Table để công thức tận dụng trọn vẹn bề ngang trang (6.30 inch)
+    - Công thức KHÔNG BAO GIỜ bị ép co hẹp hay rớt dòng vụn vặt
+    - Số công thức căn đều sát lề phải chuẩn IEEE/PTIT
     """
     if not formula_text or not formula_text.strip():
         return
 
-    table = doc.add_table(rows=1, cols=2)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.autofit = False
+    lines = [l.strip() for l in formula_text.split('\n') if l.strip()]
+    if not lines:
+        return
 
-    table.columns[0].width = Inches(5.6)
-    table.columns[1].width = Inches(0.7)
+    for idx, line in enumerate(lines):
+        p = doc.add_paragraph()
+        p.paragraph_format.first_line_indent = Inches(0)
+        p.paragraph_format.space_before = Pt(3 if idx > 0 else 6)
+        p.paragraph_format.space_after = Pt(3 if idx < len(lines) - 1 else 6)
 
-    cell_eq = table.rows[0].cells[0]
-    cell_num = table.rows[0].cells[1]
+        tab_stops = p.paragraph_format.tab_stops
+        tab_stops.add_tab_stop(Inches(3.15), WD_TAB_ALIGNMENT.CENTER)
+        tab_stops.add_tab_stop(Inches(6.30), WD_TAB_ALIGNMENT.RIGHT)
 
-    # Bỏ hoàn toàn đường viền bảng
-    for cell in (cell_eq, cell_num):
-        tcPr = cell._tc.get_or_add_tcPr()
-        tcBorders = parse_xml(
-            f'<w:tcBorders {nsdecls("w")}>'
-            f'<w:top w:val="none"/>'
-            f'<w:left w:val="none"/>'
-            f'<w:bottom w:val="none"/>'
-            f'<w:right w:val="none"/>'
-            f'</w:tcBorders>'
-        )
-        tcPr.append(tcBorders)
+        p.add_run('\t')
+        runs = parse_formula_to_runs(line)
+        for text, is_sub, is_sup, is_italic, is_bold in runs:
+            r = p.add_run(clean_xml_string(text))
+            r.font.name = "Cambria Math"
+            r.font.size = Pt(12)
+            if is_sub:
+                r.font.subscript = True
+            if is_sup:
+                r.font.superscript = True
+            if is_italic:
+                r.font.italic = True
+            if is_bold:
+                r.font.bold = True
 
-    p_eq = cell_eq.paragraphs[0]
-    p_eq.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_eq.paragraph_format.space_before = Pt(6)
-    p_eq.paragraph_format.space_after = Pt(6)
-    p_eq.paragraph_format.first_line_indent = Inches(0)
-
-    runs = parse_formula_to_runs(formula_text)
-    for text, is_sub, is_sup, is_italic, is_bold in runs:
-        r = p_eq.add_run(clean_xml_string(text))
-        r.font.name = "Cambria Math"
-        r.font.size = Pt(12)
-        if is_sub:
-            r.font.subscript = True
-        if is_sup:
-            r.font.superscript = True
-        if is_italic:
-            r.font.italic = True
-        if is_bold:
-            r.font.bold = True
-
-    if eq_number:
-        p_num = cell_num.paragraphs[0]
-        p_num.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p_num.paragraph_format.space_before = Pt(6)
-        p_num.paragraph_format.space_after = Pt(6)
-        p_num.paragraph_format.first_line_indent = Inches(0)
-        r_num = p_num.add_run(eq_number)
-        r_num.font.name = "Times New Roman"
-        r_num.font.size = Pt(12)
+        # Đánh số công thức ở dòng đầu tiên (hoặc dòng duy nhất)
+        if eq_number and idx == 0:
+            p.add_run('\t')
+            r_num = p.add_run(eq_number)
+            r_num.font.name = "Times New Roman"
+            r_num.font.size = Pt(12)
 
 
 def add_image_figure(doc, img_path, caption, width_inch=5.5):

@@ -648,13 +648,13 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
             run.font.italic = True
             run.font.color.rgb = RGBColor(40, 40, 40)
         elif raw.startswith('- ') or raw.startswith('* '):
-            p = doc.add_paragraph(style='List Bullet')
+            p = doc.add_paragraph()
             p.paragraph_format.line_spacing = 1.3
             p.paragraph_format.space_after = Pt(2)
             p.paragraph_format.space_before = Pt(0)
-            p.paragraph_format.first_line_indent = Inches(-0.2)
-            p.paragraph_format.left_indent = Inches(0.4)
-            format_body_paragraph(p, raw[2:].strip())
+            p.paragraph_format.left_indent = Inches(0.35)
+            p.paragraph_format.first_line_indent = Inches(-0.15)
+            format_body_paragraph(p, "–  " + raw[2:].strip())
         elif re.match(r'^\d+\.\s', raw):
             p = doc.add_paragraph()
             p.paragraph_format.line_spacing = 1.3

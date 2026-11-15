@@ -48,6 +48,12 @@ $$TR_t = \max \left( High_t - Low_t, \, |High_t - Close_{t-1}|, \, |Low_t - Clos
 
 $$ATR_{14, t} = \frac{ATR_{14, t-1} \times 13 + TR_t}{14}$$
 
+Trong đó:
+–  $High_t, Low_t$: Mức giá cao nhất và thấp nhất của cây nến tại bước thời gian $t$;
+–  $Close_{t-1}$: Mức giá đóng cửa của cây nến liền kề trước đó (bước thời gian $t-1$);
+–  $TR_t$: Biên độ dao động thực tế (True Range) phản ánh khoảng giá thực chiến lớn nhất tính cả khoảng nhảy giá (Gap);
+–  $ATR_{14, t}$: Giá trị trung bình động làm mượt hàm mũ của biên độ dao động thực tế theo chu kỳ 14 nến.
+
 Mức độ đóng góp và tầm quan trọng của từng nhóm đặc trưng kỹ thuật đối với mô hình dự báo được thể hiện trực quan trên biểu đồ Hình 2.1:
 
 ![Hình 2.1: Phân tích độ quan trọng của các đặc trưng kỹ thuật tài chính](hinh_anh/feature_importance_analysis.png)
@@ -63,7 +69,13 @@ Phép tích chập 1D thực hiện trượt một bộ lọc (Kernel) kích th�
 
 $$y_t = \text{ReLU} \left( \sum_{i=0}^{k-1} W_i \cdot x_{t+i} + b \right)$$
 
-Trong đó $x_t \in \mathbb{R}^d$ là vector đặc trưng tại bước thời gian $t$ ($d = 20$), $W$ là ma trận trọng số bộ lọc và $b$ là hệ số điều chỉnh bias. 
+Trong đó:
+–  $x_{t+i} \in \mathbb{R}^d$: Vector đặc trưng kỹ thuật tại bước thời gian $t+i$ ($d = 20$ đặc trưng tài chính);
+–  $W_i \in \mathbb{R}^{m \times d}$: Ma trận trọng số của bộ lọc tích chập tại vị trí trượt thứ $i$;
+–  $k$: Kích thước cửa sổ trượt của bộ lọc tích chập (Kernel Size, trong đề tài chọn $k = 3$);
+–  $b \in \mathbb{R}^m$: Vector hệ số chệch (Bias) của tầng tích chập;
+–  $\text{ReLU}(z) = \max(0, z)$: Hàm kích hoạt phi tuyến tính giúp mạng học các quan hệ phi tuyến;
+–  $y_t \in \mathbb{R}^m$: Vector đặc trưng cục bộ đầu ra ($m = 48$ bộ lọc ở lớp đầu và $m = 32$ bộ lọc ở lớp thứ hai).
 
 Nhờ cơ chế chia sẻ trọng số (Weight Sharing) và tính bất biến tịnh tiến cục bộ (Local Translation Invariance), tầng 1D-CNN tự động nhận diện các hình thái nến đảo chiều quan trọng (như nến Pinbar rút râu, nến nhấn chìm Engulfing) mà không làm bùng nổ số lượng tham số cần huấn luyện.
 
@@ -84,9 +96,28 @@ $$\tilde{h}_t = \tanh\left(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h\right)$$
 –  **Vector trạng thái ẩn chính thức (Hidden State):** Tuyến tính hóa giữa trạng thái cũ và ứng viên mới theo cổng $z_t$:
 $$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$$
 
+Trong các phương trình trên:
+–  $x_t \in \mathbb{R}^d$: Vector đầu vào tại thời điểm $t$ trích xuất từ tầng tích chập 1D-CNN ($d = 32$);
+–  $h_{t-1} \in \mathbb{R}^u$: Vector trạng thái ẩn tại bước thời gian trước đó ($u = 32$ units);
+–  $z_t \in (0, 1)^u$: Giá trị kích hoạt của cổng cập nhật;
+–  $r_t \in (0, 1)^u$: Giá trị kích hoạt của cổng đặt lại;
+–  $\tilde{h}_t \in (-1, 1)^u$: Vector trạng thái ẩn ứng viên tổng hợp thông tin mới;
+–  $h_t \in (-1, 1)^u$: Vector trạng thái ẩn chính thức được truyền tiếp sang bước thời gian $t+1$;
+–  $W_z, W_r, W_h \in \mathbb{R}^{u \times d}$: Các ma trận trọng số kết nối giữa vector đầu vào $x_t$ và các cổng;
+–  $U_z, U_r, U_h \in \mathbb{R}^{u \times u}$: Các ma trận trọng số hồi quy liên kết từ trạng thái ẩn $h_{t-1}$;
+–  $b_z, b_r, b_h \in \mathbb{R}^u$: Các vector hệ số chệch (bias);
+–  $\sigma(z) = \frac{1}{1 + e^{-z}}$: Hàm kích hoạt Sigmoid đưa giá trị về khoảng $(0, 1)$;
+–  $\tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}$: Hàm kích hoạt Tang Hyperbolic đưa giá trị về khoảng $(-1, 1)$;
+–  $\odot$: Phép nhân Hadamard (nhân từng phần tử tương ứng giữa hai vector cùng chiều).
+
 Trên một cửa sổ trượt $T = 50$ nến H4, kiến trúc **BiGRU (Bidirectional GRU)** xem xét chuỗi theo cả hai chiều thuận (từ quá khứ đến hiện tại) và nghịch (từ hiện tại về quá khứ) để tạo ra vector trạng thái tổng hợp $H_t$:
 
 $$H_t = [\overrightarrow{h}_t \,\|\, \overleftarrow{h}_t] = [\overrightarrow{\text{GRU}}(x_t, \vec{h}_{t-1}) \,\|\, \overleftarrow{\text{GRU}}(x_t, \overleftarrow{h}_{t+1})]$$
+
+Trong đó:
+–  $\overrightarrow{h}_t \in \mathbb{R}^{32}$: Trạng thái ẩn của chuỗi theo chiều thời gian xuôi (từ quá khứ tới hiện tại);
+–  $\overleftarrow{h}_t \in \mathbb{R}^{32}$: Trạng thái ẩn của chuỗi theo chiều thời gian ngược (từ hiện tại về quá khứ);
+–  $[\,\|\,]$: Phép ghép nối vector (Concatenation), tạo ra vector biểu diễn không gian ngữ cảnh 2 chiều $H_t \in \mathbb{R}^{64}$.
 
 ### 2.2.3 Cơ chế Chú ý đa đầu (Multi-Head Self-Attention)
 Trong một chuỗi 50 nến, các cây nến biến động bước ngoặt (Breakout hoặc nến tin vĩ mô) có tầm ảnh hưởng lớn hơn nhiều so với các nến tích lũy nhỏ. Cơ chế Chú ý (Self-Attention) cho phép mô hình tự động phân bổ trọng số tập trung vào những nến quan trọng này.
@@ -95,9 +126,19 @@ Ma trận trọng số chú ý được tính thông qua tích vô hướng chu�
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\left( \frac{Q K^T}{\sqrt{d_k}} \right) V$$
 
-Trong đó hệ số chia $\sqrt{d_k}$ giúp ổn định gradient. Mô hình mở rộng sang kiến trúc **Multi-Head Attention** gồm $h = 4$ đầu chú ý song song kết hợp tầng kết nối tắt phần dư (Residual Connection) và chuẩn hóa tầng (LayerNorm):
+Trong đó:
+–  $Q = H W_Q, K = H W_K, V = H W_V$: Lần lượt là ma trận Truy vấn (Query), Khóa (Key) và Giá trị (Value) được chiếu tuyến tính từ ma trận trạng thái ẩn $H \in \mathbb{R}^{T \times 64}$;
+–  $d_k$: Kích thước không gian chiếu của khóa ($d_k = 16$), hệ số co tỷ lệ $\sqrt{d_k} = 4$ giúp ổn định gradient khi tính tích vô hướng $QK^T$;
+–  $\text{softmax}(\cdot)$: Hàm chuẩn hóa ma trận trọng số chú ý để tổng xác suất trên mỗi hàng bằng 1;
+–  $V$: Ma trận giá trị mang thông tin nến được nhân với ma trận trọng số chú ý để tạo ra biểu diễn tổng hợp.
+
+Mô hình mở rộng sang kiến trúc **Multi-Head Attention** gồm $h = 4$ đầu chú ý song song kết hợp tầng kết nối tắt phần dư (Residual Connection) và chuẩn hóa tầng (LayerNorm):
 
 $$\text{Output}_{\text{Attn}} = \text{LayerNorm}\left( H + \text{MultiHead}(H, H, H) \right)$$
+
+Trong đó:
+–  $\text{MultiHead}(H, H, H) = \text{Concat}(\text{head}_1, \dots, \text{head}_4) W_O$: Kết quả ghép nối từ 4 đầu chú ý độc lập chiếu qua ma trận trọng số $W_O$;
+–  $\text{LayerNorm}(\cdot)$: Chuẩn hóa lớp trên từng mẫu dữ liệu kết hợp cơ chế cộng tắt phần dư ($H + \dots$), giúp đồ thị tính toán không bị suy thoái khi đi qua mạng sâu.
 
 ### 2.2.4 Mô hình đề xuất CNN-BiGRU-Attention
 Mô hình đề xuất **CNN-BiGRU-Attention** tích hợp điểm mạnh của cả ba cơ chế trên thành một đường ống luồng tensor liền mạch:
@@ -108,7 +149,15 @@ Mô hình đề xuất **CNN-BiGRU-Attention** tích hợp điểm mạnh của 
 
 Để khắc phục hiện tượng mất cân bằng nhãn (lớp HOLD chiếm đa số), mô hình sử dụng hàm mất mát Categorical Cross-Entropy có trọng số phạt nghịch đảo tần suất lớp (Class Weights):
 
-$$\mathcal{L} = - \sum_{c=1}^{3} w_c \cdot y_c \cdot \log(\hat{y}_c), \quad w_c = \frac{N_{\text{total}}}{3 \times N_c}$$
+$$\mathcal{L}_{cw} = - \sum_{c=1}^{3} w_c \cdot y_c \cdot \log(\hat{y}_c), \quad w_c = \frac{N_{\text{total}}}{3 \times N_c}$$
+
+Trong đó:
+–  $c \in \{1, 2, 3\}$: Chỉ số tương ứng với 3 lớp quyết định ($c=1$: HOLD, $c=2$: BUY, $c=3$: SELL);
+–  $y_c \in \{0, 1\}$: Nhãn nhị phân thực tế của mẫu (dạng mã hóa One-Hot Encoding);
+–  $\hat{y}_c \in (0, 1)$: Xác suất dự báo của mô hình đối với lớp $c$ xuất ra từ tầng Softmax cuối cùng;
+–  $N_{\text{total}}$: Tổng số lượng mẫu trong tập huấn luyện;
+–  $N_c$: Số lượng mẫu thực tế thuộc về lớp $c$;
+–  $w_c$: Trọng số phạt của lớp $c$, lớp nào có tần suất xuất hiện ít hơn (như BUY/SELL) sẽ được gán trọng số $w_c$ lớn hơn để cân bằng gradient.
 
 Sơ đồ cấu trúc mạng dạng khối tensor trực quan và luồng biến đổi dữ liệu được thể hiện trên Hình 2.2:
 
@@ -124,6 +173,13 @@ $$\bar{p}_i = \frac{p_i - \min(P)}{\max(P) - \min(P)}$$
 Độ tương đồng hình thái sóng giá được đo lường bằng độ đo góc Cosine (Cosine Similarity):
 
 $$\text{Sim}(\bar{P}, \bar{Q}_j) = \frac{\bar{P} \cdot \bar{Q}_j}{\|\bar{P}\|_2 \cdot \|\bar{Q}_j\|_2} = \frac{\sum_{i=1}^{K} \bar{p}_i \bar{q}_{j,i}}{\sqrt{\sum_{i=1}^{K} \bar{p}_i^2} \sqrt{\sum_{i=1}^{K} \bar{q}_{j,i}^2}}$$
+
+Trong đó:
+–  $P = [p_1, p_2, \dots, p_K]$: Chuỗi giá đóng cửa của cửa sổ $K = 20$ nến hiện tại;
+–  $Q_j = [q_{j,1}, q_{j,2}, \dots, q_{j,K}]$: Chuỗi giá đóng cửa của cửa sổ nến lịch sử thứ $j$ trong quá khứ;
+–  $\bar{p}_i, \bar{q}_{j,i} \in [0, 1]$: Giá đóng cửa tại nến thứ $i$ sau khi đã loại bỏ độ dời giá tuyệt đối qua phép chuẩn hóa Min-Max;
+–  $\|\bar{P}\|_2 = \sqrt{\sum_{i=1}^K \bar{p}_i^2}$: Chuẩn Euclid bậc hai (L2-norm) của vector giá hiện tại;
+–  $\text{Sim}(\bar{P}, \bar{Q}_j) \in [-1.0, 1.0]$: Độ tương đồng góc Cosine giữa hai vector hình thái sóng; giá trị càng tiệm cận $1.0$ thể hiện hai mẫu hình sóng dao động càng trùng khớp.
 
 Thuật toán chọn ra Top 5 kịch bản lịch sử có độ tương đồng cao nhất ($\text{Sim} \ge 0.90$) để đưa ra gợi ý xác suất (Probability Bias) hỗ trợ mô hình học sâu. Nguyên lý so khớp hình thái sóng được minh họa trực quan trên Hình 2.3:
 
@@ -161,7 +217,13 @@ $$\text{Sentiment}_{\text{Final}}(XAU) =
 0 & \text{với tin tức trung tính hoặc không liên quan}
 \end{cases}$$
 
-Điểm cảm xúc $\text{Sentiment}_{\text{Final}} \in [-1.0, +1.0]$ được sử dụng để điều chỉnh xác suất vào lệnh. Khi phát hiện tin tức kinh tế cực mạnh (Tin đỏ sắp công bố trong vòng 30 phút), màng lọc Sentinel 24/7 sẽ phát tín hiệu ngắt mạch an toàn (News Circuit Breaker) để tạm dừng mở vị thế mới.
+Trong đó:
+–  $\text{Score}_{USD} \in [-1.0, +1.0]$: Điểm sắc thái tin tức kinh tế vĩ mô của Mỹ do mô hình FinBERT và từ điển VADER trích xuất;
+–  Hệ số $-1.0$: Hệ số nghịch pha phản ánh quy luật kinh tế: khi USD mạnh lên thì giá trị của Vàng chịu áp lực điều chỉnh giảm và ngược lại;
+–  $\text{Score}_{\text{SafeHaven}} \in [0, +1.0]$: Điểm sắc thái rủi ro toàn cầu kích hoạt nhu cầu mua Vàng làm tài sản trú ẩn an toàn;
+–  $\text{Sentiment}_{\text{Final}}(XAU) \in [-1.0, +1.0]$: Điểm cảm xúc định lượng cuối cùng được hệ thống tích hợp vào mô hình ra quyết định.
+
+Điểm cảm xúc $\text{Sentiment}_{\text{Final}}$ được sử dụng để điều chỉnh xác suất vào lệnh. Khi phát hiện tin tức kinh tế cực mạnh (Tin đỏ sắp công bố trong vòng 30 phút), màng lọc Sentinel 24/7 sẽ phát tín hiệu ngắt mạch an toàn (News Circuit Breaker) để tạm dừng mở vị thế mới.
 
 ---
 
@@ -205,21 +267,37 @@ Khoảng cách giá để mở lệnh thứ $k$ ($k \ge 1$) được điều ch�
 
 $$\text{Spacing}_k = \text{BaseSpacing} \times \left( \frac{ATR_{14, \text{current}}}{ATR_{14, \text{baseline}}} \right) \times \gamma^{(k-1)}$$
 
-Trong đó $\text{BaseSpacing}$ là bước giá cơ sở, $ATR_{14, \text{current}}$ là độ biến động nến thực tế tại thời điểm mở lệnh, và $\gamma \ge 1.0$ là hệ số giãn nở bước giá lũy tiến (ví dụ: $\gamma = 1.15$). Khi thị trường biến động mạnh, bước giá tự động dãn rộng để giảm thiểu số lượng lệnh phải gánh.
+Trong đó:
+–  $\text{Spacing}_k$: Khoảng cách giá (tính bằng Points) để mở bậc lệnh thứ $k$ so với lệnh trước đó;
+–  $\text{BaseSpacing}$: Bước giá cơ sở thiết lập ban đầu (cấu hình mặc định 1000 points trên khung H1);
+–  $ATR_{14, \text{current}}$: Giá trị độ biến động thực tế tại thời điểm mở lệnh;
+–  $ATR_{14, \text{baseline}}$: Giá trị biến động trung bình dài hạn của thị trường Vàng ($ATR_{\text{baseline}} = 25.0$);
+–  $\gamma \ge 1.0$: Hệ số giãn nở bước giá lũy tiến ($\gamma = 1.15$), giúp các bậc lệnh sau nằm xa nhau hơn khi thị trường biến động mạnh;
+–  $k \in \{1, 2, \dots, m\}$: Số thứ tự bậc lệnh trong chu trình DCA hiện tại.
 
 #### 2. Khối lượng lũy tiến kiểm soát
 Khối lượng lệnh thứ $k$ tuân theo nguyên tắc:
 
 $$\text{Lot}_k = \min \left( \text{BaseLot} \times \beta^{(k-1)}, \, \text{MaxLotLimit} \right)$$
 
-Hệ số nhân $\beta$ được cấu hình ở mức thận trọng ($1.2 \le \beta \le 1.4$), tránh nhân đôi lot theo kiểu Martingale nguy hiểm ($\beta = 2.0$).
+Trong đó:
+–  $\text{Lot}_k$: Khối lượng giao dịch của lệnh thứ $k$ (tính theo đơn vị Lot tiêu chuẩn);
+–  $\text{BaseLot}$: Khối lượng lệnh khởi đầu chu kỳ ($0.01$ lot cho tài khoản thử nghiệm $2,000);
+–  $\beta$: Hệ số nhân khối lượng có kiểm soát ($1.2 \le \beta \le 1.4$), tránh rủi ro nhân đôi khối lượng như chiến lược Martingale;
+–  $\text{MaxLotLimit}$: Ngưỡng trần khối lượng tối đa cho phép một vị thế đơn lẻ nhằm bảo vệ tỷ lệ ký quỹ Margin Level.
 
 #### 3. Điểm hòa vốn tổng hòa (Consolidated Break-Even Target)
 Thay vì chốt lời từng lệnh đơn lẻ, thuật toán tính toán mức giá hòa vốn bình quân gia quyền của toàn bộ rổ lệnh:
 
 $$P_{\text{BreakEven}} = \frac{\sum_{i=1}^{m} \text{Lot}_i \times \text{OpenPrice}_i}{\sum_{i=1}^{m} \text{Lot}_i}$$
 
-Mức chốt lời tổng thể được dời về: $P_{\text{TP}} = P_{\text{BreakEven}} \pm \Delta_{\text{Target}}$. Chỉ cần thị trường có một nhịp hồi nhẹ (Pullback chiếm 25% – 35% biên độ sóng giảm), toàn bộ rổ lệnh sẽ tự động đóng đồng loạt với tổng lợi nhuận dương.
+Trong đó:
+–  $m$: Tổng số lượng lệnh đang mở trong chu kỳ hiện tại ($1 \le m \le 6$ tầng lệnh);
+–  $\text{Lot}_i$: Khối lượng giao dịch của lệnh thứ $i$;
+–  $\text{OpenPrice}_i$: Mức giá khớp thực tế của lệnh thứ $i$;
+–  $P_{\text{BreakEven}}$: Mức giá hòa vốn tổng hợp bình quân gia quyền của toàn bộ rổ lệnh; khi giá thị trường hồi về mức này, tổng lợi nhuận thả nổi của chu kỳ cân bằng về mức 0.
+
+Mức chốt lời tổng thể được dời về: $P_{\text{TP}} = P_{\text{BreakEven}} \pm \Delta_{\text{Target}}$ (với $\Delta_{\text{Target}}$ là khoảng thặng dư lợi nhuận mục tiêu). Chỉ cần thị trường có một nhịp hồi nhẹ (Pullback chiếm 25% – 35% biên độ sóng giảm), toàn bộ rổ lệnh sẽ tự động đóng đồng loạt với tổng lợi nhuận dương.
 
 Nguyên lý co giãn bước giá và tối ưu điểm hòa vốn trên biểu đồ đường giá thực chiến được thể hiện trên Hình 2.4:
 
@@ -229,7 +307,8 @@ Nguyên lý co giãn bước giá và tối ưu điểm hòa vốn trên biểu 
 Để phòng ngừa các đợt bão giá một chiều cực đoan, hệ thống tích hợp cơ chế phòng vệ **Hedging**:
 1. **Khóa rủi ro thả nổi (Drawdown Lock):** Khi mức sụt giảm vốn thả nổi của rổ lệnh chạm ngưỡng cảnh báo cấu hình ($\text{Drawdown} \ge 25\%$), Robot tự động mở vị thế đối ứng có khối lượng tương đương theo chiều ngược lại:
    $$\text{Lot}_{\text{Hedge}} = \left| \sum \text{Lot}_{\text{BUY}} - \sum \text{Lot}_{\text{SELL}} \right|$$
-   Khi vị thế phòng hộ được xác lập, toàn bộ mức lỗ tạm thời của tài khoản bị đóng băng hoàn toàn.
+   
+   Trong đó $\sum \text{Lot}_{\text{BUY}}$ và $\sum \text{Lot}_{\text{SELL}}$ lần lượt là tổng khối lượng các lệnh Mua và Bán đang mở trên tài khoản. Khi vị thế phòng hộ $\text{Lot}_{\text{Hedge}}$ được kích hoạt, toàn bộ mức lỗ tạm thời của tài khoản bị đóng băng hoàn toàn.
 2. **Cơ chế tháo gỡ từng phần (Gradual Unwind):** Khi mô hình AI nhận diện xu hướng cực đoan đã suy kiệt trên khung H4, Robot sẽ kích hoạt chu trình tháo gỡ từng cặp lệnh đối nghịch có lãi, đưa trạng thái tài khoản trở về vùng an toàn mà không phải chịu tổn thất cắt lỗ đột ngột.
 
 ---
@@ -241,6 +320,11 @@ Từ ma trận nhầm lẫn (Confusion Matrix) cho bài toán phân loại 3 l�
 
 $$\text{Macro } F1 = \frac{1}{3} \sum_{c=1}^{3} \left( 2 \times \frac{\text{Precision}_c \times \text{Recall}_c}{\text{Precision}_c + \text{Recall}_c} \right)$$
 
+Trong đó:
+–  $\text{Precision}_c = \frac{TP_c}{TP_c + FP_c}$: Độ chính xác dự báo của lớp $c$, đo lường tỷ lệ các lần dự báo tín hiệu đúng trên tổng số lần phát tín hiệu;
+–  $\text{Recall}_c = \frac{TP_c}{TP_c + FN_c}$: Độ bao phủ của lớp $c$, đo lường tỷ lệ bắt trúng cơ hội giao dịch thực tế trên thị trường;
+–  $\text{Macro } F1$: Trung bình cộng chỉ số F1 của cả 3 lớp (BUY, HOLD, SELL), gán trọng số bình đẳng giữa các lớp nhằm đánh giá công bằng năng lực dự báo mà không bị chi phối bởi lớp chiếm đa số.
+
 *Ý nghĩa thống kê:* Với bài toán phân loại 3 lớp trên dữ liệu chuỗi thời gian tài chính có độ nhiễu cao, độ chính xác ngẫu nhiên là $33.33\%$. Do đó, mô hình đạt độ chính xác từ $36\% - 42\%$ với Macro F1 cân bằng đã đại diện cho một lợi thế thống kê thực tế có ý nghĩa. Kết quả ma trận nhầm lẫn thực tế của mô hình đề xuất được thể hiện trên Hình 2.5:
 
 ![Hình 2.5: Ma trận nhầm lẫn đánh giá phân loại 3 lớp của mô hình đề xuất](hinh_anh/confusion_matrix_cnn_bigru.png)
@@ -250,11 +334,20 @@ Hệ thống sử dụng hai chỉ số định lượng tài chính cốt lõi 
 
 –  **Mức sụt giảm tài khoản tối đa (Maximum Drawdown - MDD):**
    $$MDD = \max_{t} \left( \frac{\max_{0 \le \tau \le t}(Equity_\tau) - Equity_t}{\max_{0 \le \tau \le t}(Equity_\tau)} \right) \times 100\%$$
-   Chỉ số đo lường rủi ro vốn lớn nhất từng xảy ra; yêu cầu hệ thống duy trì MDD luôn dưới ngưỡng 25%.
+
+   Trong đó:
+   –  $Equity_t$: Giá trị vốn ròng (Equity) của tài khoản tại thời điểm $t$;
+   –  $\max_{0 \le \tau \le t}(Equity_\tau)$: Giá trị vốn ròng đỉnh cao nhất từng đạt được trong quá khứ tính đến thời điểm $t$;
+   –  $MDD$: Mức sụt giảm tài sản lớn nhất tính từ đỉnh vốn, phản ánh rủi ro suy kiệt tài khoản cao nhất; yêu cầu hệ thống duy trì MDD luôn dưới ngưỡng an toàn 25%.
 
 –  **Tỷ số Sharpe (Sharpe Ratio):** Đo lường lợi nhuận vượt trội trên một đơn vị rủi ro tổng thể:
    $$\text{Sharpe Ratio} = \frac{\mathbb{E}[R_p - R_f]}{\sigma_p}$$
-   Trong đó $R_p$ là tỷ suất sinh lời của chiến lược, $R_f$ là tỷ suất sinh lời phi rủi ro, và $\sigma_p$ là độ lệch chuẩn của tỷ suất sinh lời. Tỷ số Sharpe $> 2.0$ khẳng định chiến lược đạt hiệu quả sinh lời vượt trội với mức biến động rủi ro thấp.
+
+   Trong đó:
+   –  $R_p$: Chuỗi tỷ suất sinh lời theo từng chu kỳ của chiến lược giao dịch;
+   –  $R_f$: Tỷ suất sinh lời phi rủi ro (lấy bằng lợi suất trái phiếu chính phủ Mỹ kỳ hạn ngắn, xấp xỉ 4.5%/năm);
+   –  $\mathbb{E}[R_p - R_f]$: Lợi nhuận kỳ vọng vượt trội so với tài sản phi rủi ro;
+   –  $\sigma_p$: Độ lệch chuẩn của tỷ suất sinh lời, đại diện cho mức biến động rủi ro tổng thể. Tỷ số Sharpe $> 2.0$ khẳng định chiến lược đạt hiệu quả sinh lời vượt trội với mức biến động rủi ro thấp.
 
 ---
 

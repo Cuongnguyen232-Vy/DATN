@@ -25,7 +25,7 @@ Dữ liệu chuỗi thời gian của cặp XAU/USD có 3 đặc điểm động
 | 2 | **EMA_50** | Xu hướng | Đường trung bình động hàm mũ 50 chu kỳ | $[0, 1]$ |
 | 3 | **EMA_200** | Xu hướng | Đường trung bình động hàm mũ 200 chu kỳ | $[0, 1]$ |
 | 4 | **EMA_Diff** | Động lượng | Độ lệch tương đối: $(EMA_{20} - EMA_{50}) / EMA_{50}$ | $[-1, 1]$ |
-| 5 | **RSI_14** | Động lượng | Chỉ số sức mạnh tương đối 14 chu kỳ ($RSI/100$) | $[0, 1]$ |
+| 5 | **RSI_14** | Động lượng | Chỉ số sức mạnh tương đối 14 chu kỳ ($RSI / 100$) | $[0, 1]$ |
 | 6 | **MACD_Line** | Động lượng | Hiệu số hai đường trung bình động: $EMA_{12} - EMA_{26}$ | $[-1, 1]$ |
 | 7 | **MACD_Signal** | Động lượng | Đường tín hiệu: $EMA_9(\text{MACD Line})$ | $[-1, 1]$ |
 | 8 | **MACD_Hist** | Động lượng | Histogram xung lực: $\text{MACD Line} - \text{Signal Line}$ | $[-1, 1]$ |
@@ -38,7 +38,7 @@ Dữ liệu chuỗi thời gian của cặp XAU/USD có 3 đặc điểm động
 | 15 | **ROC_10** | Động lượng | Tốc độ thay đổi giá so với 10 nến trước | $[-1, 1]$ |
 | 16 | **ATR_14** | Biến động | Độ biến động thực tế trung bình 14 chu kỳ | $[0, 1]$ |
 | 17 | **ATR_Ratio** | Biến động | Tỷ số biến động: $ATR_{14} / Close$ | $[0, 1]$ |
-| 18 | **Body_Size** | Hình thái nến | Tỷ lệ thân nến chuẩn hóa: $|Close - Open| / (High - Low)$ | $[0, 1]$ |
+| 18 | **Body_Size** | Hình thái nến | Tỷ lệ thân nến chuẩn hóa: $\text{abs}(Close - Open) / (High - Low)$ | $[0, 1]$ |
 | 19 | **Upper_Shadow**| Hình thái nến | Tỷ lệ bóng nến trên: $(High - \max(Open, Close)) / (High - Low)$ | $[0, 1]$ |
 | 20 | **Volume_Ratio**| Khối lượng | Tỷ số khối lượng giao dịch so với trung bình 20 nến | $[0, 1]$ |
 

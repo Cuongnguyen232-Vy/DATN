@@ -252,6 +252,50 @@ def add_abbreviations_table(doc):
     doc.add_page_break()
 
 
+def format_cell_paragraph(p, text, font_size_pt=10, is_first_col=False):
+    """Định dạng văn bản trong ô bảng: hỗ trợ bold, italic, code và inline math $...$"""
+    parts = re.split(r'(\*\*.*?\*\*|\*.*?\*|`.*?`|\$[^\$]+\$)', text)
+    for part in parts:
+        if not part:
+            continue
+        if part.startswith('**') and part.endswith('**'):
+            r = p.add_run(clean_xml_string(part[2:-2]))
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(font_size_pt)
+            r.font.bold = True
+            if is_first_col:
+                r.font.color.rgb = RGBColor(0, 32, 96)
+        elif part.startswith('*') and part.endswith('*'):
+            r = p.add_run(clean_xml_string(part[1:-1]))
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(font_size_pt)
+            r.font.italic = True
+        elif part.startswith('`') and part.endswith('`'):
+            r = p.add_run(clean_xml_string(part[1:-1]))
+            r.font.name = "Consolas"
+            r.font.size = Pt(font_size_pt)
+            r.font.color.rgb = RGBColor(160, 32, 64)
+        elif part.startswith('$') and part.endswith('$'):
+            math_content = part[1:-1]
+            runs = parse_formula_to_runs(math_content)
+            for m_text, is_sub, is_sup, is_italic, is_bold in runs:
+                r = p.add_run(clean_xml_string(m_text))
+                r.font.name = "Cambria Math"
+                r.font.size = Pt(font_size_pt)
+                if is_sub:
+                    r.font.subscript = True
+                if is_sup:
+                    r.font.superscript = True
+                if is_italic:
+                    r.font.italic = True
+                if is_bold:
+                    r.font.bold = True
+        else:
+            r = p.add_run(clean_xml_string(part))
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(font_size_pt)
+
+
 def format_body_paragraph(p, text, is_intro=False):
     """Định dạng đoạn văn chuẩn PTIT: Font Times 13pt, Giãn dòng 1.3, Thụt đầu dòng 1.0cm"""
     p.paragraph_format.line_spacing = 1.3
@@ -445,7 +489,7 @@ def parse_formula_to_runs(latex_str):
         (r'\hat{y}', 'ŷ'), (r'\hat', '^'),
         (r'\overrightarrow{h}', 'h⃗'), (r'\overleftarrow{h}', 'h⃖'), (r'\vec{h}', 'h⃗'),
         (r'\bar{p}', 'p̄'), (r'\bar{P}', 'P̄'), (r'\bar{Q}', 'Q̄'), (r'\bar{q}', 'q̄'),
-        (r'\mathcal{L}', 'L'), (r'\|', '‖'),
+        (r'\mathcal{L}', 'L'), (r'\|', '‖'), (r'\%', '%'),
     ]
     for p, r in replaces:
         s = s.replace(p, r)
@@ -628,21 +672,11 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
                         set_cell_background(cell, "FFFFFF")
                     else:
                         set_cell_background(cell, "FBFBFB")
-                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    parts = re.split(r'(\*\*.*?\*\*)', val)
-                    for part in parts:
-                        if not part:
-                            continue
-                        if part.startswith('**') and part.endswith('**'):
-                            r = p.add_run(clean_xml_string(part[2:-2]))
-                            r.font.name = "Times New Roman"
-                            r.font.size = Pt(10)
-                            r.font.bold = True
-                            r.font.color.rgb = RGBColor(0, 32, 96) if c_idx == 0 else RGBColor(0, 0, 0)
-                        else:
-                            r = p.add_run(clean_xml_string(part))
-                            r.font.name = "Times New Roman"
-                            r.font.size = Pt(10)
+                    if c_idx == 0 or (c_idx == len(row) - 1 and val.startswith('[')):
+                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    else:
+                        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    format_cell_paragraph(p, val, font_size_pt=10, is_first_col=(c_idx <= 1))
 
         p_after = doc.add_paragraph()
         p_after.paragraph_format.space_before = Pt(0)

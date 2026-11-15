@@ -353,12 +353,12 @@ def clean_latex_formula(s):
         if s == prev:
             break
 
-    s = re.sub(r'\\vec\s*\{([^{}]+)\}', r'\1_thuận', s)
-    s = re.sub(r'\\overrightarrow\s*\{([^{}]+)\}', r'\1_thuận', s)
-    s = re.sub(r'\\overleftarrow\s*\{([^{}]+)\}', r'\1_nghịch', s)
+    s = re.sub(r'\\vec\s*\{([^{}]+)\}', r'\1^(→)', s)
+    s = re.sub(r'\\overrightarrow\s*\{([^{}]+)\}', r'\1^(→)', s)
+    s = re.sub(r'\\overleftarrow\s*\{([^{}]+)\}', r'\1^(←)', s)
     s = re.sub(r'\\tilde\s*\{([^{}]+)\}', r'~\1', s)
     s = re.sub(r'\\hat\s*\{([^{}]+)\}', r'\1^', s)
-    s = re.sub(r'\\bar\s*\{([^{}]+)\}', r'\1_bar', s)
+    s = re.sub(r'\\bar\s*\{([^{}]+)\}', r'\1_tb', s)
 
     # 4. Clean \frac
     for _ in range(4):

@@ -32,6 +32,10 @@ Trong đồ án này, Hệ thống hỗ trợ ra quyết định giao dịch tà
 - **Phân hệ quy tắc và quản trị rủi ro (Knowledge/Rule Base Subsystem):** Thực thi các thuật toán quản lý vốn lưới ma trận (DCA), cơ chế điều chỉnh khoảng cách theo biến động thực tế (ATR) và cơ chế khóa phòng hộ (Hedging) để bảo toàn vốn.
 - **Phân hệ giao diện tương tác (User Interface Subsystem):** Bảng điều khiển trực quan (Dashboard) hiển thị trên biểu đồ giao dịch MetaTrader 5 và kênh cảnh báo, điều khiển từ xa qua Telegram Bot.
 
+Kiến trúc tổng thể của Hệ thống hỗ trợ ra quyết định giao dịch tài chính VQuant được mô tả chi tiết trên Hình 1.1:
+
+![Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ thống hỗ trợ ra quyết định giao dịch tài chính VQuant](hinh_anh/system_architecture_diagram.png)
+
 Từ các phân tích trên, đề tài tốt nghiệp được xác định là: **"Xây dựng hệ thống hỗ trợ ra quyết định giao dịch tài chính sử dụng dữ liệu chuỗi thời gian"**.
 
 ### 1.1.4 Các khái niệm cơ bản
@@ -159,12 +163,9 @@ Nghiên cứu ứng dụng các mô hình học sâu và xử lý ngôn ngữ t�
 
 Nội dung đồ án được tổ chức thành **3 chương** chính:
 
-- **Chương 1: Tổng quan về bài toán**
-  Trình bày bối cảnh thực tế, mô hình hệ thống hỗ trợ ra quyết định (DSS), các khái niệm cơ bản, các phương pháp tiếp cận hiện nay, các thách thức kỹ thuật, mục tiêu nghiên cứu và bố cục đồ án.
-- **Chương 2: Cơ sở lý thuyết và công nghệ áp dụng**
-  Trình bày cơ sở toán học của các chỉ báo kỹ thuật, kiến trúc mô hình học sâu (CNN-BiGRU-Attention), thuật toán so khớp mẫu hình, mô hình xử lý ngôn ngữ tự nhiên (NLP FinBERT), nền tảng MetaTrader 5 và nguyên lý quản lý vốn ma trận DCA kết hợp Hedging.
-- **Chương 3: Thiết kế, cài đặt và đánh giá hệ thống VQuant**
-  Trình bày kiến trúc tổng thể của hệ thống, thiết kế chi tiết các phân hệ (Lõi AI Python, Robot MT5, Telegram Bot), kết quả thực nghiệm huấn luyện, kết quả kiểm thử quá khứ (Backtesting), đánh giá hiệu năng và kết luận hướng phát triển.
+- **Chương 1 (Tổng quan về bài toán):** Trình bày bối cảnh thực tế, mô hình hệ thống hỗ trợ ra quyết định (DSS), các khái niệm cơ bản, các phương pháp tiếp cận hiện nay, các thách thức kỹ thuật, mục tiêu nghiên cứu và bố cục đồ án.
+- **Chương 2 (Cơ sở lý thuyết và công nghệ áp dụng):** Trình bày cơ sở toán học của các chỉ báo kỹ thuật, kiến trúc mô hình học sâu (CNN-BiGRU-Attention), thuật toán so khớp mẫu hình, mô hình xử lý ngôn ngữ tự nhiên (NLP FinBERT), nền tảng MetaTrader 5 và nguyên lý quản lý vốn ma trận DCA kết hợp Hedging.
+- **Chương 3 (Thiết kế, cài đặt và đánh giá hệ thống VQuant):** Trình bày kiến trúc tổng thể của hệ thống, thiết kế chi tiết các phân hệ (Lõi AI Python, Robot MT5, Telegram Bot), kết quả thực nghiệm huấn luyện, kết quả kiểm thử quá khứ (Backtesting), đánh giá hiệu năng và kết luận hướng phát triển.
 
 ---
 

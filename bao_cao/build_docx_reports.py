@@ -628,7 +628,15 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
 
         flush_math()
 
-        if raw.startswith('# '):
+        if raw.startswith('![') and ']' in raw and '(' in raw and raw.endswith(')'):
+            m = re.match(r'!\[(.*?)\]\((.*?)\)', raw)
+            if m:
+                caption = m.group(1).strip()
+                img_path = m.group(2).strip()
+                if not os.path.isabs(img_path):
+                    img_path = os.path.normpath(os.path.join(os.path.dirname(md_file_path), img_path))
+                add_image_figure(doc, img_path, caption, width_inch=5.2)
+        elif raw.startswith('# '):
             format_heading(doc, raw[2:].strip(), 1)
         elif raw.startswith('## '):
             format_heading(doc, raw[3:].strip(), 2)
@@ -692,8 +700,6 @@ def build_chapter_1():
     md_p = r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md"
     parse_and_write_markdown(doc, md_p, chapter_num=1)
 
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ thống hỗ trợ ra quyết định giao dịch tài chính VQuant", width_inch=5.2)
-
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_NguyenManhCuong_B22DCCN099.docx"
     safe_save(doc, out_p)
 
@@ -702,15 +708,11 @@ def build_chapter_2():
     """Tạo file Word độc lập cho Chương 2"""
     doc = docx.Document()
     apply_ptit_page_setup(doc)
-    add_cover_box(doc, "CHƯƠNG 2. CƠ SỞ KIẾN THỨC VÀ CÔNG NGHỆ ÁP DỤNG")
+    add_cover_box(doc, "CHƯƠNG 2. CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ ÁP DỤNG")
     add_abbreviations_table(doc)
 
     md_p = r"c:\KLTNN\bao_cao\CHUONG_2_CO_SO_LY_THUYET.md"
     parse_and_write_markdown(doc, md_p, chapter_num=2)
-
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_2_NguyenManhCuong_B22DCCN099.docx"
     safe_save(doc, out_p)
@@ -724,14 +726,8 @@ def build_combined_1_and_2():
     add_abbreviations_table(doc)
 
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_1_TONG_QUAN.md", chapter_num=1)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\system_architecture_diagram.png", "Hình 1.1: Sơ đồ kiến trúc tổng thể Hệ sinh thái Giao dịch tự động VQuant", width_inch=5.2)
-
     doc.add_page_break()
-
     parse_and_write_markdown(doc, r"c:\KLTNN\bao_cao\CHUONG_2_CO_SO_LY_THUYET.md", chapter_num=2)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\feature_importance_analysis.png", "Hình 2.1: Phân tích độ quan trọng của 24 đặc trưng kỹ thuật tài chính", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\ai_training_pipeline.png", "Hình 2.2: Luồng tiền xử lý và huấn luyện mô hình CNN-BiGRU-Attention", width_inch=5.5)
-    add_image_figure(doc, r"c:\KLTNN\bao_cao\hinh_anh\dca_grid_mechanism.png", "Hình 2.3: Nguyên lý thuật toán quản lý vốn lưới ma trận co giãn theo biến động ATR", width_inch=5.0)
 
     out_p = r"c:\KLTNN\bao_cao\BaoCao_Chuong_1_va_2_NguyenManhCuong_B22DCCN099.docx"
     safe_save(doc, out_p)

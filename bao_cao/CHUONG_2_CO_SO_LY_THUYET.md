@@ -70,13 +70,19 @@ Nhờ cơ chế chia sẻ trọng số (Weight Sharing) và tính bất biến t
 ### 2.2.2 Mạng hồi quy có cổng hai chiều (BiGRU)
 Để mô hình hóa sự phụ thuộc thời gian dài hạn mà không gặp phải hiện tượng triệt tiêu đạo hàm, đề tài lựa chọn kiến trúc **GRU (Gated Recurrent Unit)** thay vì LSTM truyền thống, bởi GRU tinh gọn hơn (giảm 25% tham số), tốc độ huấn luyện nhanh và giảm thiểu rủi ro quá khớp trên tập dữ liệu chuỗi tài chính.
 
-Cơ chế điều khiển dòng thông tin của GRU được xác định bởi hai cổng:
+Cơ chế điều khiển dòng thông tin của đơn vị GRU tại mỗi bước thời gian $t$ được định nghĩa qua các cổng và trạng thái sau:
 
-$$\text{Cổng cập nhật (Update Gate):} \quad z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)$$
+–  **Cổng cập nhật (Update Gate):** Quyết định tỷ lệ thông tin từ trạng thái trước cần được duy trì:
+$$z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)$$
 
-$$\text{Cổng đặt lại (Reset Gate):} \quad r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)$$
+–  **Cổng đặt lại (Reset Gate):** Xác định mức độ thông tin từ trạng thái quá khứ cần được loại bỏ:
+$$r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)$$
 
-$$\text{Trạng thái ẩn (Hidden State):} \quad h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h)$$
+–  **Trạng thái ẩn ứng viên (Candidate Hidden State):** Kết hợp vector đầu vào mới và thông tin quá khứ đã được lọc qua cổng đặt lại:
+$$\tilde{h}_t = \tanh\left(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h\right)$$
+
+–  **Vector trạng thái ẩn chính thức (Hidden State):** Tuyến tính hóa giữa trạng thái cũ và ứng viên mới theo cổng $z_t$:
+$$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$$
 
 Trên một cửa sổ trượt $T = 50$ nến H4, kiến trúc **BiGRU (Bidirectional GRU)** xem xét chuỗi theo cả hai chiều thuận (từ quá khứ đến hiện tại) và nghịch (từ hiện tại về quá khứ) để tạo ra vector trạng thái tổng hợp $H_t$:
 

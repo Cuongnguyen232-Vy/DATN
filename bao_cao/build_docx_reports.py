@@ -275,11 +275,20 @@ def format_body_paragraph(p, text, is_intro=False):
             run.font.size = Pt(13)
             run.font.italic = True
         elif part.startswith('$') and part.endswith('$'):
-            cleaned_math = clean_latex_formula(part[1:-1])
-            run = p.add_run(clean_xml_string(cleaned_math))
-            run.font.name = "Cambria Math"
-            run.font.size = Pt(12)
-            run.font.italic = True
+            math_content = part[1:-1]
+            runs = parse_formula_to_runs(math_content)
+            for m_text, is_sub, is_sup, is_italic, is_bold in runs:
+                run = p.add_run(clean_xml_string(m_text))
+                run.font.name = "Cambria Math"
+                run.font.size = Pt(12)
+                if is_sub:
+                    run.font.subscript = True
+                if is_sup:
+                    run.font.superscript = True
+                if is_italic:
+                    run.font.italic = True
+                if is_bold:
+                    run.font.bold = True
         else:
             run = p.add_run(clean_xml_string(part))
             run.font.name = "Times New Roman"
@@ -324,129 +333,229 @@ def format_heading(doc, text, level):
     return p
 
 
-def clean_latex_formula(s):
-    """Chuyển đổi mã nguồn LaTeX sang công thức toán Unicode rõ ràng, đẹp mắt cho Word"""
-    s = str(s).strip()
-    
-    # 0. Pre-clean environments and special operators
+MATH_KEYWORDS = {
+    'ReLU', 'Attention', 'softmax', 'LayerNorm', 'MultiHead', 'Sim', 'Sentiment',
+    'Spacing', 'BaseSpacing', 'BaseLot', 'MaxLotLimit', 'BreakEven', 'Hedge',
+    'Precision', 'Recall', 'Macro', 'Sharpe', 'Ratio', 'Drawdown', 'MDD', 'Equity',
+    'High', 'Low', 'Close', 'OpenPrice', 'BUY', 'SELL', 'HOLD', 'XAU', 'USD',
+    'Final', 'Attn', 'total', 'current', 'baseline', 'downside', 'tanh', 'max', 'min', 'log', 'exp',
+    'Average', 'Gain', 'Loss', 'Score', 'SafeHaven', 'Netting', 'Hedging', 'TR', 'ATR', 'F1'
+}
+
+
+def clean_nested_frac(s):
+    """Xử lý triệt để \\frac{A}{B} kể cả khi có ngoặc nhọn lồng nhau"""
+    while r'\frac' in s:
+        idx = s.find(r'\frac')
+        start_num = s.find('{', idx)
+        if start_num == -1:
+            break
+        depth = 0
+        end_num = -1
+        for i in range(start_num, len(s)):
+            if s[i] == '{':
+                depth += 1
+            elif s[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    end_num = i
+                    break
+        if end_num == -1:
+            break
+            
+        start_den = s.find('{', end_num)
+        if start_den == -1:
+            break
+        depth = 0
+        end_den = -1
+        for i in range(start_den, len(s)):
+            if s[i] == '{':
+                depth += 1
+            elif s[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    end_den = i
+                    break
+        if end_den == -1:
+            break
+            
+        num = s[start_num+1:end_num].strip()
+        den = s[start_den+1:end_den].strip()
+        s = s[:idx] + f"({num}) / ({den})" + s[end_den+1:]
+    return s
+
+
+def clean_nested_sqrt(s):
+    """Xử lý triệt để \\sqrt{A} kể cả khi có ngoặc nhọn lồng nhau"""
+    while r'\sqrt' in s:
+        idx = s.find(r'\sqrt')
+        start = s.find('{', idx)
+        if start == -1:
+            break
+        depth = 0
+        end = -1
+        for i in range(start, len(s)):
+            if s[i] == '{':
+                depth += 1
+            elif s[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    end = i
+                    break
+        if end == -1:
+            break
+        inner = s[start+1:end].strip()
+        s = s[:idx] + f"√({inner})" + s[end+1:]
+    return s
+
+
+def parse_formula_to_runs(latex_str):
+    """
+    Phân tích chuỗi LaTeX thành danh sách các runs định dạng chuẩn cho Microsoft Word:
+    (text, is_sub, is_sup, is_italic, is_bold)
+    """
+    s = str(latex_str).strip()
+
+    # 0. Loại bỏ môi trường cases, aligned và text
     s = s.replace(r'\begin{cases}', '').replace(r'\end{cases}', '')
     s = s.replace(r'\begin{aligned}', '').replace(r'\end{aligned}', '')
-    s = s.replace('&', '  :  ')
-    s = s.replace(r'\rightarrow', ' → ').replace(r'\leftarrow', ' ← ')
-    s = s.replace(r'\mathcal{L}', 'L').replace(r'\mathbb{E}', 'E')
+    s = s.replace(r'\\', '\n')
 
-    # 1. Clean \text{...}
     for _ in range(5):
-        prev = s
-        s = re.sub(r'\\text\s*\{([^{}]+)\}', r'\1', s)
-        if s == prev:
-            break
+        s = re.sub(r'\\(?:text|mathrm|mathbf)\s*\{([^{}]+)\}', r'\1', s)
 
-    # 2. Convert subscripts/superscripts
-    s = re.sub(r'_\{([^{}]+)\}', r'_(\1)', s)
-    s = re.sub(r'\^\{([^{}]+)\}', r'^(\1)', s)
+    # Xử lý phân số và căn bậc hai trước khi thay thế ký hiệu
+    s = clean_nested_frac(s)
+    s = clean_nested_sqrt(s)
 
-    # 3. Clean inner math commands
-    for _ in range(5):
-        prev = s
-        s = re.sub(r'\\sqrt\s*\{([^{}]+)\}', r'√(\1)', s)
-        if s == prev:
-            break
-
-    s = re.sub(r'\\vec\s*\{([^{}]+)\}', r'\1^(→)', s)
-    s = re.sub(r'\\overrightarrow\s*\{([^{}]+)\}', r'\1^(→)', s)
-    s = re.sub(r'\\overleftarrow\s*\{([^{}]+)\}', r'\1^(←)', s)
-    s = re.sub(r'\\tilde\s*\{([^{}]+)\}', r'~\1', s)
-    s = re.sub(r'\\hat\s*\{([^{}]+)\}', r'\1^', s)
-    s = re.sub(r'\\bar\s*\{([^{}]+)\}', r'\1_tb', s)
-
-    # 4. Clean \frac
-    for _ in range(4):
-        s = re.sub(r'\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}', r'[\1] / [\2]', s)
-
-    # 5. Remove brackets
-    s = s.replace(r'\left(', '(').replace(r'\right)', ')')
-    s = s.replace(r'\left[', '[').replace(r'\right]', ']')
-    s = s.replace(r'\left|', '|').replace(r'\right|', '|')
-    s = s.replace(r'\left.', '').replace(r'\right.', '')
-    s = s.replace(r'\left', '').replace(r'\right', '')
-
-    # 6. Greek & Math symbols
-    table = [
-        (r'\times', ' × '),
-        (r'\cdot', ' · '),
-        (r'\odot', ' ⊙ '),
-        (r'\alpha', 'α'),
-        (r'\beta', 'β'),
-        (r'\gamma', 'γ'),
-        (r'\sigma', 'σ'),
-        (r'\Delta', 'Δ'),
-        (r'\ge', '≥'),
-        (r'\le', '≤'),
-        (r'\ne', '≠'),
-        (r'\approx', '≈'),
-        (r'\in', '∈'),
-        (r'\mathbb{R}', 'ℝ'),
-        (r'\mathbb R', 'ℝ'),
-        (r'\sum', '∑'),
-        (r'\max', 'max'),
-        (r'\min', 'min'),
-        (r'\tanh', 'tanh'),
-        (r'\quad', '   '),
-        (r'\qquad', '      '),
-        (r'\dots', '...'),
-        (r'\|', ' ‖ '),
-        (r'\%', '%'),
-        (r'\pm', '±'),
-        (r'\tau', 'τ'),
-        (r'\\', '\n'),
+    # 1. Thay thế các toán tử và ký hiệu toán học
+    replaces = [
+        (r'\left(', '('), (r'\right)', ')'),
+        (r'\left[', '['), (r'\right]', ']'),
+        (r'\left|', '|'), (r'\right|', '|'),
+        (r'\left.', ''), (r'\right.', ''),
+        (r'\,', ' '), (r'\quad', '   '), (r'\qquad', '      '),
+        (r'\times', ' × '), (r'\cdot', ' · '), (r'\odot', ' ⊙ '),
+        (r'\sigma', 'σ'), (r'\alpha', 'α'), (r'\beta', 'β'), (r'\gamma', 'γ'),
+        (r'\Delta', 'Δ'), (r'\tau', 'τ'), (r'\mathbb{E}', 'E'), (r'\mathbb{R}', 'ℝ'),
+        (r'\approx', '≈'), (r'\ge', '≥'), (r'\le', '≤'), (r'\ne', '≠'),
+        (r'\sum', '∑'), (r'\max', 'max'), (r'\min', 'min'),
+        (r'\tanh', 'tanh'), (r'\log', 'log'), (r'\ln', 'ln'),
+        (r'\tilde{h}', 'h̃'), (r'\tilde', '~'),
+        (r'\hat{y}', 'ŷ'), (r'\hat', '^'),
+        (r'\overrightarrow{h}', 'h⃗'), (r'\overleftarrow{h}', 'h⃖'), (r'\vec{h}', 'h⃗'),
+        (r'\bar{p}', 'p̄'), (r'\bar{P}', 'P̄'), (r'\bar{Q}', 'Q̄'), (r'\bar{q}', 'q̄'),
+        (r'\mathcal{L}', 'L'), (r'\|', '‖'),
     ]
-    for p, r in table:
+    for p, r in replaces:
         s = s.replace(p, r)
 
+    # Dọn dẹp lệnh LaTeX còn sót lại
     s = re.sub(r'\\[a-zA-Z]+', '', s)
-    s = s.replace('{', '').replace('}', '')
-    s = re.sub(r'[ \t]+', ' ', s)
-    lines = [line.strip() for line in s.split('\n') if line.strip()]
-    return clean_xml_string('\n'.join(lines))
+
+    # 2. Tokenize với Subscript và Superscript
+    token_pattern = re.compile(
+        r'(?P<sub>_\{[^{}]+\}|_[a-zA-Z0-9]+)|'
+        r'(?P<sup>\^\{[^{}]+\}|\^[a-zA-Z0-9]+)|'
+        r'(?P<word>[a-zA-Z]+)|'
+        r'(?P<other>[^a-zA-Z_\^]+)'
+    )
+
+    runs = []
+    for m in token_pattern.finditer(s):
+        if m.group('sub'):
+            sub_val = m.group('sub')[1:]
+            if sub_val.startswith('{') and sub_val.endswith('}'):
+                sub_val = sub_val[1:-1]
+            runs.append((sub_val, True, False, False, False))
+        elif m.group('sup'):
+            sup_val = m.group('sup')[1:]
+            if sup_val.startswith('{') and sup_val.endswith('}'):
+                sup_val = sup_val[1:-1]
+            runs.append((sup_val, False, True, False, False))
+        elif m.group('word'):
+            word = m.group('word')
+            if word in MATH_KEYWORDS:
+                runs.append((word, False, False, False, False))
+            elif len(word) == 1:
+                runs.append((word, False, False, True, False))
+            else:
+                runs.append((word, False, False, False, False))
+        elif m.group('other'):
+            runs.append((m.group('other'), False, False, False, False))
+
+    return runs
 
 
-def add_math_formula(doc, formula_text):
-    """Thêm hộp công thức toán được đóng khung trang trọng, căn giữa trang"""
-    cleaned = clean_latex_formula(formula_text)
-    if not cleaned:
+def clean_latex_formula(s):
+    """Hàm tương thích ngược"""
+    runs = parse_formula_to_runs(s)
+    return "".join(r[0] for r in runs)
+
+
+def add_math_formula(doc, formula_text, eq_number=None):
+    """
+    Thêm công thức toán học chuẩn quy cách đồ án tốt nghiệp PTIT:
+    - Bảng 1 hàng, 2 cột hoàn toàn không viền
+    - Cột trái: Căn giữa, chứa công thức dạng ký hiệu toán học Cambria Math, có subscript/superscript thật
+    - Cột phải: Căn phải, hiển thị số thứ tự công thức (ví dụ: (2.4))
+    - Tuyệt đối không dùng khung nền màu xám thô ráp
+    """
+    if not formula_text or not formula_text.strip():
         return
 
-    lines = [l.strip() for l in cleaned.split('\n') if l.strip()]
-    if not lines:
-        return
-
-    table = doc.add_table(rows=1, cols=1)
+    table = doc.add_table(rows=1, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
 
-    cell = table.rows[0].cells[0]
-    cell.width = Inches(5.8)
-    set_cell_background(cell, "F8F9FA")
-    set_cell_margins(cell, top=80, bottom=80, left=150, right=150)
+    table.columns[0].width = Inches(5.6)
+    table.columns[1].width = Inches(0.7)
 
-    for idx, line in enumerate(lines):
-        p = cell.paragraphs[0] if idx == 0 else cell.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p.paragraph_format.space_before = Pt(2)
-        p.paragraph_format.space_after = Pt(2)
-        p.paragraph_format.first_line_indent = Inches(0)
+    cell_eq = table.rows[0].cells[0]
+    cell_num = table.rows[0].cells[1]
 
-        run = p.add_run(line)
-        run.font.name = "Cambria Math"
-        run.font.size = Pt(11)
-        run.font.bold = True
-        run.font.color.rgb = RGBColor(0, 32, 96)
+    # Bỏ hoàn toàn đường viền bảng
+    for cell in (cell_eq, cell_num):
+        tcPr = cell._tc.get_or_add_tcPr()
+        tcBorders = parse_xml(
+            f'<w:tcBorders {nsdecls("w")}>'
+            f'<w:top w:val="none"/>'
+            f'<w:left w:val="none"/>'
+            f'<w:bottom w:val="none"/>'
+            f'<w:right w:val="none"/>'
+            f'</w:tcBorders>'
+        )
+        tcPr.append(tcBorders)
 
-    p_after = doc.add_paragraph()
-    p_after.paragraph_format.space_before = Pt(0)
-    p_after.paragraph_format.space_after = Pt(4)
-    p_after.paragraph_format.first_line_indent = Inches(0)
+    p_eq = cell_eq.paragraphs[0]
+    p_eq.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_eq.paragraph_format.space_before = Pt(6)
+    p_eq.paragraph_format.space_after = Pt(6)
+    p_eq.paragraph_format.first_line_indent = Inches(0)
+
+    runs = parse_formula_to_runs(formula_text)
+    for text, is_sub, is_sup, is_italic, is_bold in runs:
+        r = p_eq.add_run(clean_xml_string(text))
+        r.font.name = "Cambria Math"
+        r.font.size = Pt(12)
+        if is_sub:
+            r.font.subscript = True
+        if is_sup:
+            r.font.superscript = True
+        if is_italic:
+            r.font.italic = True
+        if is_bold:
+            r.font.bold = True
+
+    if eq_number:
+        p_num = cell_num.paragraphs[0]
+        p_num.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_num.paragraph_format.space_before = Pt(6)
+        p_num.paragraph_format.space_after = Pt(6)
+        p_num.paragraph_format.first_line_indent = Inches(0)
+        r_num = p_num.add_run(eq_number)
+        r_num.font.name = "Times New Roman"
+        r_num.font.size = Pt(12)
 
 
 def add_image_figure(doc, img_path, caption, width_inch=5.5):
@@ -480,12 +589,15 @@ def parse_and_write_markdown(doc, md_file_path, chapter_num=1):
     in_math_block = False
     math_buffer = []
     table_buffer = []
+    formula_count = 0
 
     def flush_math():
-        nonlocal math_buffer
+        nonlocal math_buffer, formula_count
         if math_buffer:
             combined = "\n".join(math_buffer)
-            add_math_formula(doc, combined)
+            formula_count += 1
+            eq_num = f"({chapter_num}.{formula_count})"
+            add_math_formula(doc, combined, eq_number=eq_num)
             math_buffer = []
 
     def flush_table():
